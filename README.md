@@ -38,6 +38,8 @@ k8s = "1.28"
 ```
 kcl run -f argocd_crd.k
 ```
+over dev execute: kcl run | kubectl apply -f -
+
 over namespaces execute: kcl namespaces.k | kubectl apply -f -
 over argocd execute: kcl argocd_crd.k | k apply -n argocd -f -
 
