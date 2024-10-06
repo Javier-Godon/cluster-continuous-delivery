@@ -1,0 +1,28 @@
+[dependencies]
+  [dependencies.k8s_manifest]
+    name = "k8s_manifest"
+    full_name = "k8s_manifest_0.1.0"
+    version = "0.1.0"
+    reg = "ghcr.io"
+    repo = "kusionstack/k8s_manifest"
+    oci_tag = "0.1.0"
+  [dependencies.kam]
+    name = "kam"
+    full_name = "kam_0.1.0"
+    version = "0.1.0"
+    url = "https://github.com/KusionStack/kam.git"
+    git_tag = "0.2.0"
+  [dependencies.network]
+    name = "network"
+    full_name = "network_0.2.0"
+    version = "0.2.0"
+    reg = "ghcr.io"
+    repo = "kusionstack/network"
+    oci_tag = "0.2.0"
+  [dependencies.service]
+    name = "service"
+    full_name = "service_0.1.0"
+    version = "0.1.0"
+    reg = "ghcr.io"
+    repo = "kusionstack/service"
+    oci_tag = "0.1.0"

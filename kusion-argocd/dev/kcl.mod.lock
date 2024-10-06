@@ -1,0 +1,18 @@
+[dependencies]
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.31"
+    version = "1.31"
+  [dependencies.k8s_manifest]
+    name = "k8s_manifest"
+    full_name = "k8s_manifest_0.1.0"
+    version = "0.1.0"
+    reg = "ghcr.io"
+    repo = "kusionstack/k8s_manifest"
+    oci_tag = "0.1.0"
+  [dependencies.kam]
+    name = "kam"
+    full_name = "kam_0.1.0"
+    version = "0.1.0"
+    url = "https://github.com/KusionStack/kam.git"
+    git_tag = "v0.2.1"

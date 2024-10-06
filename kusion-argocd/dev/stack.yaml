@@ -1,0 +1,6 @@
+# The metadata information of the stack.
+name: dev
+extensions:
+  - kind: kubernetesNamepace
+    kubernetesNamepace:
+      namespace: argocd

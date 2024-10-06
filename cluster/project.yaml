@@ -1,0 +1,6 @@
+# The project basic info.
+name: kusion
+extensions:
+  - kind: kubernetesNamespace
+    kubernetesNamespace:
+      namespace: kusion

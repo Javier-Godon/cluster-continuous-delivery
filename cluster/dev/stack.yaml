@@ -1,0 +1,6 @@
+# The stack basic info.
+name: dev
+extensions: 
+  - kind: kubernetesNamespace
+    kubernetesNamespace: 
+      namespace: argocd
