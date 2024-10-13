@@ -33,7 +33,6 @@ k8s = "1.28"
 ```
 
 
-
 # Get the yaml manifests
 ```
 kcl run -f argocd_crd.k

@@ -1,0 +1,17 @@
+items_kubernetes_install = [
+    {
+        apiVersion = "pkg.crossplane.io/v1"
+        kind = "Provider"
+        metadata = {
+            name = "provider-kubernetes"
+        }
+        spec = {
+            package = "xpkg.upbound.io/crossplane-contrib/provider-kubernetes:v0.15.0"
+            runtimeConfigRef = {
+                apiVersion = "pkg.example.org/v1"
+                kind = "DeploymentRuntimeConfig"
+                name = "default"
+            }
+        }
+    }
+]

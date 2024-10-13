@@ -1,0 +1,44 @@
+# Creates a namespace for the QuestDB instance.
+apiVersion: kubernetes.crossplane.io/v1alpha2
+kind: Object
+metadata:
+  name: questdb-namespace
+  namespace: default
+spec:
+  forProvider:
+    manifest:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: questdb
+  providerConfigRef:
+    name: kubernetes-provider
+
+---
+# Tells crossplante to create a QuestDB custom resource from the questdb kubernetes operator in the questdb namespace
+apiVersion: kubernetes.crossplane.io/v1alpha2
+kind: Object
+metadata:
+  name: questdb-instance
+  namespace: default
+spec:
+  forProvider:
+    manifest:
+      apiVersion: crd.questdb.io/v1beta1
+      kind: QuestDB
+      metadata:
+        name: questdb-single-local
+        namespace: questdb
+        labels:
+          app.kubernetes.io/name: questdb
+          app.kubernetes.io/instance: questdb-single-local
+          app.kubernetes.io/part-of: questdb-operator
+          app.kubernetes.io/managed-by: crossplane
+          app.kubernetes.io/created-by: questdb-operator
+      spec:
+        imagePullPolicy: Always
+        volume:
+          size: 10Gi
+        image: questdb/questdb:8.1.2
+  providerConfigRef:
+    name: kubernetes-provider

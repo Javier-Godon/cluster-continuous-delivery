@@ -1,0 +1,16 @@
+apiVersion: kubernetes.crossplane.io/v1alpha2
+kind: Object
+metadata:
+  annotations:
+    uptest.upbound.io/timeout: "60"
+  name: sample-namespace
+spec:
+  forProvider:
+    manifest:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        labels:
+          example: "true"
+  providerConfigRef:
+    name: kubernetes-provider

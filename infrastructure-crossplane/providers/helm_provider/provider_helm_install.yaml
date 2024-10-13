@@ -1,0 +1,9 @@
+# https://github.com/crossplane-contrib/provider-kubernetes/tree/main
+# option 1: crossplane xpkg install provider xpkg.upbound.io/crossplane-contrib/provider-kubernetes:v0.13.0
+# oprion 2: creating this provider directly
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-helm
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/provider-helm:v0.17.0

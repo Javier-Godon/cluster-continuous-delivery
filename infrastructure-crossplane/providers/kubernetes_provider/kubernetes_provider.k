@@ -1,0 +1,14 @@
+items_kubernetes_provider = [
+    {
+        apiVersion = "kubernetes.crossplane.io/v1alpha1"
+        kind = "ProviderConfig"
+        metadata = {
+            name = "kubernetes-provider"
+        }
+        spec = {
+            credentials = {
+                source = "InjectedIdentity"
+            }
+        }
+    }
+]

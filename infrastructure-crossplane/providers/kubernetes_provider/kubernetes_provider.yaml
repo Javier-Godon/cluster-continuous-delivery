@@ -1,0 +1,8 @@
+# https://github.com/crossplane-contrib/provider-kubernetes/blob/main/examples/provider/config-in-cluster.yaml
+apiVersion: kubernetes.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: kubernetes-provider
+spec:
+  credentials:
+    source: InjectedIdentity
