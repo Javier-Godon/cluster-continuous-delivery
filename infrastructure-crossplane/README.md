@@ -21,7 +21,6 @@ To list all package versions: (providers, configurations and functions)
  in manager/kustomization.yaml change the version for the desired questdb-operator version (in my case newTag: v0.5.1)
  over questdb-operator/config execute: k apply -k default
 
-
  to retrieve all resources managed by crossplane:
 
  ```
