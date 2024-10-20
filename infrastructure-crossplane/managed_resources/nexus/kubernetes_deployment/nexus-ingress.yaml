@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexus-ingress
+  labels:
+    name: nexus-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: blue-ci-cd.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /nexus
+        backend:
+          service:
+            name: nexus-service
+            port:
+              number: 8081
+              
+     
+      
+

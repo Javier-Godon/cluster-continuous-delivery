@@ -1,0 +1,163 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: postgrescompositeworkloads.kubernetes.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: PostgresCompositeWorkload
+  resources:
+    - name: namespacePostgres
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: postgres-namespace
+          namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: postgres                               
+          providerConfigRef:
+            name: kubernetes-provider
+    - name: persistentVolumeBluePostgresPvVolume
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              kind: PersistentVolume
+              apiVersion: v1
+              metadata:
+                name: blue-postgres-pv-volume
+                namespace: postgres 
+                labels:
+                  type: local
+                  app: blue-postgres
+              spec:
+                storageClassName: manual
+                capacity:
+                  storage: 20Gi
+                accessModes:
+                  - ReadWriteMany
+                persistentVolumeReclaimPolicy: Retain  
+                hostPath:
+                  path: "/mnt/data/postgres-volume"
+
+    - name: persistenceVolumeClaimBluePostgresPvClaim
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              kind: PersistentVolumeClaim
+              apiVersion: v1
+              metadata:
+                name: blue-postgres-pv-claim
+                namespace: postgres 
+                labels:
+                  app: blue-postgres
+              spec:
+                storageClassName: manual
+                accessModes:
+                  - ReadWriteMany
+                resources:
+                  requests:
+                    storage: 20Gi
+
+    - name: configMapBluePostgresConfig
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: blue-postgres-config
+                namespace: postgres 
+                labels:
+                  app: blue-postgres
+              data:
+                POSTGRES_DB: blue_postgres
+                POSTGRES_USER: postgres
+                POSTGRES_PASSWORD: postgres  
+
+    - name: deploymentBluePostgres
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: blue-postgres
+                namespace: postgres
+                labels: 
+                  app: blue-postgres
+              spec:
+                replicas: 1
+                selector:
+                  matchLabels:
+                    app: blue-postgres
+                template:
+                  metadata:                    
+                    labels:
+                      app: blue-postgres
+                  spec:
+                    containers:
+                      - name: postgres
+                        image: postgres:17.0-alpine3.20
+                        imagePullPolicy: "IfNotPresent"
+                        ports:
+                          - containerPort: 5432
+                        envFrom:
+                          - configMapRef:
+                              name: blue-postgres-config
+                        volumeMounts:
+                          - mountPath: /var/lib/postgresql/data
+                            name: postgresdb
+                    volumes:
+                      - name: postgresdb
+                        persistentVolumeClaim:
+                          claimName: blue-postgres-pv-claim
+
+    - name: serviceBluePostgres
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: blue-postgres
+                namespace: postgres 
+                labels:
+                  app: blue-postgres
+              spec:
+                selector:
+                  app: blue-postgres
+                type: LoadBalancer
+                ports:
+                - port: 5432
+                  nodePort: 31543                       

@@ -1,0 +1,11 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: ArgocdWorkload
+metadata:
+  name: argocd-workload
+  namespace: default
+spec:
+  namespace: argocd
+  # resourceRef:
+  #   apiVersion: gitops.bluesolution.es/v1alpha1
+  #   kind: ArgocdCompositeWorkload
+  #   name: argocdcompositeworkloads.gitops.bluesolution.es

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blue-postgres-config
+  labels:
+    app: blue-postgres
+data:
+  POSTGRES_DB: blue_postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres   

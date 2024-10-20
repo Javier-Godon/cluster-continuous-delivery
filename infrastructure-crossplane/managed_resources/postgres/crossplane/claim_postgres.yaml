@@ -1,0 +1,11 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: PostgresWorkload
+metadata:
+  name: postgres-workload
+  namespace: default
+spec:
+  namespace: postgres
+  # resourceRef:
+  #   apiVersion: gitops.bluesolution.es/v1alpha1
+  #   kind: PostgresCompositeWorkload
+  #   name: postgrescompositeworkloads.gitops.bluesolution.es

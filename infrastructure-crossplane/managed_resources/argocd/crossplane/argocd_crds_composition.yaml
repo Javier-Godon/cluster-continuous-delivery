@@ -1,0 +1,11 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: compositeworkload.kubernetes
+spec:
+  compositeTypeRef:
+    apiVersion: kubernetes.crossplane.io/v1alpha1
+    kind: CompositeWorkload
+  resources:
+    - name: serviceaccountArgocdApplicationController
+      base:

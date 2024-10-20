@@ -1,0 +1,26 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: argocdcompositeworkloads.gitops.bluesolution.es
+spec:
+  group: gitops.bluesolution.es
+  names:
+    kind: ArgocdCompositeWorkload
+    plural: argocdcompositeworkloads
+  claimNames:
+    kind: ArgocdWorkload
+    plural: argocdworkloads
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                namespace:
+                  type: string
+                

@@ -1,0 +1,14 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: blue-kibana
+spec:
+  version: 8.15.3
+  count: 1
+  elasticsearchRef:
+    name: "blue-elasticsearch"
+    namespace: "monitoring"
+  config:
+    xpack.fleet.packages:
+    - name: apm
+      version: latest

@@ -1,0 +1,17 @@
+apiVersion: apm.k8s.elastic.co/v1
+kind: ApmServer
+metadata:
+  name: blue-elasticsearch-apm-server
+  namespace: monitoring
+spec:
+  version: 8.15.3
+  count: 1
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
+  elasticsearchRef:
+    name: "blue-elasticsearch"
+  kibanaRef:
+    name: "blue-kibana" 
+    namespace: "monitoring"

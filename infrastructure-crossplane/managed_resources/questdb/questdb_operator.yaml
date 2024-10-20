@@ -58,7 +58,7 @@ spec:
       kind: Deployment
       metadata:
         name: questdb-operator
-        namespace: questdb-system
+        namespace: questdb-operator-system
       spec:
         replicas: 1
         selector:

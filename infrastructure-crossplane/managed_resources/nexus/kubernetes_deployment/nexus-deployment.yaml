@@ -1,0 +1,77 @@
+# https://help.sonatype.com/repomanager3/installation-and-upgrades/configuring-the-runtime-environment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus-server
+  template:
+    metadata:
+      labels:
+        app: nexus-server
+    spec:
+      containers:
+        - name: nexus          
+          image: sonatype/nexus3:latest
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "1000m"
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8081
+          env:
+          - name: NEXUS_CONTEXT
+            value: nexus
+          - name: NEXUS_SECURITY_INITIAL_USERNAME
+            value: admin
+          - name: NEXUS_SECURITY_INITIAL_PASSWORD
+            value: admin    
+          volumeMounts:
+            - name: nexus-data
+              mountPath: /var/nexus-data
+      volumes:
+      - name: nexus-data
+        persistentVolumeClaim:
+          claimName: nexus-pv-claim
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-service
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path:   /
+      prometheus.io/port:   '8081'
+spec:
+  selector: 
+    app: nexus-server
+  type: ClusterIP  
+  ports:
+    - port: 8081
+      targetPort: 8081
+
+# ---
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: nexus-service-ingress-http
+#   annotations:
+#       prometheus.io/scrape: 'true'
+#       prometheus.io/path:   /
+#       prometheus.io/port:   '8888'
+# spec:
+#   selector: 
+#     app: nexus-server
+#   type: ClusterIP  
+#   ports:
+#     - port: 8888
+#       targetPort: 8888      

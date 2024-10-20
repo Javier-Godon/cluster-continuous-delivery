@@ -1,0 +1,11 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: ElkWorkload
+metadata:
+  name: elk-workload
+  namespace: default
+spec:
+  namespace: elk
+  # resourceRef:
+  #   apiVersion: gitops.bluesolution.es/v1alpha1
+  #   kind: ElkCompositeWorkload
+  #   name: elkcompositeworkloads.gitops.bluesolution.es

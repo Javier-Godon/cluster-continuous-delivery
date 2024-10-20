@@ -1,0 +1,7 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: NexusWorkload
+metadata:
+  name: nexus-workload
+  namespace: default
+spec:
+  namespace: argocd

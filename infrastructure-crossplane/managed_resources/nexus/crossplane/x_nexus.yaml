@@ -1,0 +1,190 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: nexuscompositeworkloads.kubernetes.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: NexusCompositeWorkload
+  resources:
+    - name: namespaceNexus
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: nexus-namespace
+          namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: nexus
+          providerConfigRef:
+            name: kubernetes-provider
+    - name: persistenceVolumeNexus
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: nexus-namespace
+          namespace: default
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: PersistentVolume
+              metadata:
+                name: nexus-pv
+                namespace: nexus
+                labels:
+                  type: local
+              spec:
+                storageClassName: nexus-pv
+                accessModes:
+                - ReadWriteOnce
+                capacity:
+                  storage: 20Gi
+                persistentVolumeReclaimPolicy: Retain
+                hostPath:
+                  path: "/mnt/data/nexus-volume"
+    - name: persistenceVolumeClaimNexus
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: nexus-namespace
+          namespace: default
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: nexus-pv-claim
+                namespace: nexus
+              spec:
+                storageClassName: nexus-pv
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 20Gi          
+    - name: serverNexus
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: nexus-namespace
+          namespace: default
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider: 
+            manifest:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: nexus
+                namespace: nexus
+              spec:
+                replicas: 1
+                selector:
+                  matchLabels:
+                    app: nexus-server
+                template:
+                  metadata:
+                    labels:
+                      app: nexus-server
+                  spec:
+                    containers:
+                      - name: nexus          
+                        image: sonatype/nexus3:latest
+                        resources:
+                          limits:
+                            memory: "4Gi"
+                            cpu: "1000m"
+                          requests:
+                            memory: "2Gi"
+                            cpu: "500m"
+                        ports:
+                          - containerPort: 8081
+                        env:
+                        - name: NEXUS_CONTEXT
+                          value: nexus
+                        - name: NEXUS_SECURITY_INITIAL_USERNAME
+                          value: admin
+                        - name: NEXUS_SECURITY_INITIAL_PASSWORD
+                          value: admin    
+                        volumeMounts:
+                          - name: nexus-data
+                            mountPath: /var/nexus-data
+                    volumes:
+                    - name: nexus-data
+                      persistentVolumeClaim:
+                        claimName: nexus-pv-claim        
+    - name: serviceNexus
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: nexus-namespace
+          namespace: default
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider: 
+            manifest: 
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: nexus-service
+                namespace: nexus
+                annotations:
+                    prometheus.io/scrape: 'true'
+                    prometheus.io/path:   /
+                    prometheus.io/port:   '8081'
+              spec:
+                selector: 
+                  app: nexus-server
+                type: ClusterIP  
+                ports:
+                  - port: 8081
+                    targetPort: 8081  
+    - name: ingressNexus
+      base: 
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: nexus-namespace
+          namespace: default
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: networking.k8s.io/v1
+              kind: Ingress
+              metadata:
+                name: nexus-ingress
+                namespace: nexus
+                labels:
+                  name: nexus-ingress
+              spec:
+                ingressClassName: nginx
+                rules:
+                - host: blue-ci-cd.com
+                  http:
+                    paths:
+                    - pathType: Prefix
+                      path: /nexus
+                      backend:
+                        service:
+                          name: nexus-service
+                          port:
+                            number: 8081                             
