@@ -21,9 +21,58 @@ To list all package versions: (providers, configurations and functions)
  in manager/kustomization.yaml change the version for the desired questdb-operator version (in my case newTag: v0.5.1)
  over questdb-operator/config execute: k apply -k default
 
+ we can get the crds in a file: k kustomize default > default_crds.yaml
+
  to retrieve all resources managed by crossplane:
 
  ```
  k get managed
  ```
 
+
+For Strimzi: first we need to build annotations, then generator
+
+you can simply get the crds from: https://strimzi.io/install/latest?namespace=kafka
+
+then 
+
+```
+k create -f strimzi-cluster-operator-0.43.0.yaml -n kafka 
+```
+
+we could generate the CRDs manually
+
+```
+https://github.com/strimzi/strimzi-kafka-operator.git
+
+cd strimzi-kafka-operator/crd-annotations
+
+make
+
+cd strimzi-kafka-operator/crd-generator
+
+make
+
+java -jar target/crd-generator-0.45.0-SNAPSHOT.jar
+
+```
+
+we will obtain the file: strimzi-crds.yaml
+
+when we do make what we are doing is:
+
+```
+cd strimzi-kafka-operator
+mvn clean install -pl crd-generator -am
+
+```
+
+MONGODB
+
+over operator/kubernetes_deployment/community_operator/mongodb-kubernetes-operator/config
+
+```
+k apply -k default -n mongodb
+```
+then we will use: mongodb.com_v1_mongodbcommunity_additional_mongod_config_cr.yaml
+wich is in: mongodb/operator/kubernetes_deployment/community_operator/mongodb-kubernetes-operator/config/samples/

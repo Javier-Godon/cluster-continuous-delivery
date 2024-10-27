@@ -38,7 +38,9 @@ spec:
       spec:
         imagePullPolicy: Always
         volume:
-          size: 10Gi
-        image: questdb/questdb:8.1.2
+          name: questdb
+          persistentVolumeClaim:
+            claimName: questdb-postgres-pv-claim
+        image: questdb/questdb:8.1.4
   providerConfigRef:
     name: kubernetes-provider

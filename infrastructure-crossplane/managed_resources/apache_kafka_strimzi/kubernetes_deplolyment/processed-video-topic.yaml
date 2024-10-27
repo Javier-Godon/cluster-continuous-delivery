@@ -1,0 +1,9 @@
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: processed-video
+  labels:
+    strimzi.io/cluster: blue-cluster
+spec:
+  partitions: 3
+  replicas: 1

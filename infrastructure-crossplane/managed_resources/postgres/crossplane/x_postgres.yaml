@@ -36,7 +36,7 @@ spec:
               apiVersion: v1
               metadata:
                 name: blue-postgres-pv-volume
-                namespace: postgres 
+                namespace: "{{ .spec.namespace }}"  
                 labels:
                   type: local
                   app: blue-postgres
@@ -63,7 +63,7 @@ spec:
               apiVersion: v1
               metadata:
                 name: blue-postgres-pv-claim
-                namespace: postgres 
+                namespace: "{{ .spec.namespace }}"  
                 labels:
                   app: blue-postgres
               spec:
@@ -87,7 +87,7 @@ spec:
               kind: ConfigMap
               metadata:
                 name: blue-postgres-config
-                namespace: postgres 
+                namespace: "{{ .spec.namespace }}"  
                 labels:
                   app: blue-postgres
               data:
@@ -108,7 +108,7 @@ spec:
               kind: Deployment
               metadata:
                 name: blue-postgres
-                namespace: postgres
+                namespace: "{{ .spec.namespace }}" 
                 labels: 
                   app: blue-postgres
               spec:
@@ -151,7 +151,7 @@ spec:
               kind: Service
               metadata:
                 name: blue-postgres
-                namespace: postgres 
+                namespace: "{{ .spec.namespace }}"  
                 labels:
                   app: blue-postgres
               spec:

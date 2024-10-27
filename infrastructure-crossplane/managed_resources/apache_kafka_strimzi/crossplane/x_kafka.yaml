@@ -1,0 +1,121 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: kafkacompositeworkloads.kubernetes.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: KafkaCompositeWorkload
+  resources:
+    - name: kafkaNamespace
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: kafka-namespace
+          namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: kafka
+          providerConfigRef:
+            name: kubernetes-provider
+    - name: kafkaBlueCluster
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              # see: https://strimzi.io/blog/2019/04/23/accessing-kafka-part-2/
+              # to access from outside: --bootstrap-server la-macchina:31946 (31331 ?)
+              apiVersion: kafka.strimzi.io/v1beta2
+              kind: Kafka
+              metadata:
+                name: blue-cluster
+                namespace: kafka
+              spec:
+                kafka:
+                  version: 3.8.0
+                  replicas: 1
+                  listeners:
+                    - name: plain
+                      port: 9092
+                      type: internal
+                      tls: false
+                    - name: tls
+                      port: 9093
+                      type: internal
+                      tls: true
+                    - name: external
+                      port: 9094
+                      type: nodeport
+                      tls: false
+                  config:
+                    offsets.topic.replication.factor: 1
+                    transaction.state.log.replication.factor: 1
+                    transaction.state.log.min.isr: 1
+                    default.replication.factor: 1
+                    min.insync.replicas: 1
+                    inter.broker.protocol.version: "3.8"
+                  storage:
+                    type: jbod
+                    volumes:
+                      - id: 0
+                        type: persistent-claim
+                        size: 100Gi
+                        deleteClaim: false
+                zookeeper:
+                  replicas: 1
+                  storage:
+                    type: persistent-claim
+                    size: 100Gi
+                    deleteClaim: false
+                entityOperator:
+                  topicOperator: {}
+                  userOperator: {}
+
+    - name: kafkaTopicProcessedVideo
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: kafka.strimzi.io/v1beta1
+              kind: KafkaTopic
+              metadata:
+                name: processed-video
+                namespace: kafka
+                labels:
+                  strimzi.io/cluster: blue-cluster
+              spec:
+                partitions: 3
+                replicas: 1
+
+    - name: kafkaTopicStreamingVideo
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: kafka.strimzi.io/v1beta1
+              kind: KafkaTopic
+              metadata:
+                name: streaming-video
+                namespace: kafka
+                labels:
+                  strimzi.io/cluster: blue-cluster
+              spec:
+                partitions: 3
+                replicas: 1

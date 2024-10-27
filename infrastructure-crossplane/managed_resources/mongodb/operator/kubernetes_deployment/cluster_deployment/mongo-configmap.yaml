@@ -1,0 +1,24 @@
+# see: https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/docs/deploy-configure.md
+# kubectl get secret blue-mongodb-admin-user -n mongodb -o json | jq -r '.data | with_entries(.value |= @base64d)'
+# Then: k port-forward pod/blue-mongodb-0 8000:40333
+# k port-forward service/blue-mongodb-svc 8000:40333 -n mongodb
+
+# Connect from cli: mongosh "mongodb://user:admin@localhost:8000/?authMechanism=DEFAULT&authSource=admin"
+apiVersion: v1 
+kind: ConfigMap
+metadata:
+  name: mongodb-configmap
+data:
+  # database_url: blue-mongodb-0, blue-mongodb-1, blue-mongodb-2
+  # connectionString.standard: mongodb://admin:admin@blue-mongodb-svc:40333/db?ssl=false
+  # connectionString.standard: mongodb://user:admin@blue-mongodb-0.blue-mongodb-svc,blue-mongodb-0.blue-mongodb-svc,blue-mongodb-0.blue-mongodb-svc:40333/dbname_?
+  # connectionString.standard: mongodb://user:admin@blue-mongodb-0.blue-mongodb-svc.cluster.local/dbname_?
+  connectionString.standard: mongodb://user:admin@blue-mongodb-0.blue-mongodb-svc.mongodb.svc.cluster.local:40333,blue-mongodb-1.blue-mongodb-svc.mongodb.svc.cluster.local:40333,blue-mongodb-2.blue-mongodb-svc.mongodb.svc.cluster.local:40333/videos?replicaSet=blue-mongodb&ssl=false
+  connectionString.standardSrv: mongodb+srv://user:admin@blue-mongodb-svc.mongodb.svc.cluster.local/videos?replicaSet=blue-mongodb&ssl=false
+  password: admin
+  username: user
+
+
+
+
+

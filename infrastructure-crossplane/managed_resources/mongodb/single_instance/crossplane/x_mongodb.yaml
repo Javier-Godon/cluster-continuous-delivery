@@ -1,0 +1,157 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: mongodbcompositeworkloads.kubernetes.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: MongodbCompositeWorkload
+  resources:
+    - name: mongodbNamespace
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: mongodb-namespace
+          namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: mongodb
+          providerConfigRef:
+            name: kubernetes-provider
+            
+    - name: deploymentBlueMongoDb
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata: 
+                name: blue-mongo-db
+                namespace: mongodb
+              spec: 
+                selector: 
+                  matchLabels: 
+                    app: blue-mongo-db
+                replicas: 1
+                strategy: 
+                  type: RollingUpdate
+                  rollingUpdate: 
+                    maxSurge: 1
+                    maxUnavailable: 1
+                minReadySeconds: 5
+                template: 
+                  metadata: 
+                    labels: 
+                      app: blue-mongo-db
+                  spec: 
+                    containers: 
+                      - name: blue-mongo-db
+                        image: mongo
+                        resources:
+                          limits:
+                            memory: "4Gi"
+                            cpu: "1000m"
+                          requests:
+                            memory: "2Gi"
+                            cpu: "500m"
+                        imagePullPolicy: Always
+                        env: 
+                        - name: MONGO_INITDB_ROOT_USERNAME
+                          value: admin                
+                        - name: MONGO_INITDB_ROOT_PASSWORD
+                          value: admin                
+                        ports: 
+                          - containerPort: 27017
+                            name: mongodb                
+                        volumeMounts: 
+                          - name: blue-mongodb-pv
+                            mountPath: /data/db                
+                    volumes: 
+                    - name: blue-mongodb-pv
+                      persistentVolumeClaim: 
+                        claimName: blue-mongodb-pvc
+
+    - name: serviceBlueMongoDb
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Service
+              metadata: 
+                name: blue-mongo-db
+                namespace: mongodb
+                labels: 
+                    app: blue-mongo-db
+              spec:   
+                selector: 
+                    app: blue-mongo-db 
+                ports: 
+                  - name: mongodb
+                    port: 27017
+                    nodePort: 30332
+                type: NodePort  
+
+    - name: persistenceVolumeBlueMongoDb
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: v1
+              kind: PersistentVolume
+              metadata:
+                name: blue-mongodb-pv
+                namespace: mongodb
+                labels:
+                  type: local
+              spec:
+                storageClassName: blue-mongodb-pv
+                accessModes:
+                - ReadWriteOnce
+                capacity:
+                  storage: 20Gi
+                persistentVolumeReclaimPolicy: Retain
+                hostPath:
+                  path: "/mnt/data/mongodb-volume"
+
+    - name: persistenceVolumeClaimBlueMongoDb
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: blue-mongodb-pvc
+                namespace: mongodb
+              spec:
+                storageClassName: blue-mongodb-pv
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 20Gi
+
+                                 

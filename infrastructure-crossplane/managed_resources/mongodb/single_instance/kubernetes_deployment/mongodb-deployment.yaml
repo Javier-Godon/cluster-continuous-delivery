@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: blue-mongo-db
+spec: 
+  selector: 
+    matchLabels: 
+      app: blue-mongo-db
+  replicas: 1
+  strategy: 
+    type: RollingUpdate
+    rollingUpdate: 
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template: 
+    metadata: 
+      labels: 
+        app: blue-mongo-db
+    spec: 
+      containers: 
+        - name: blue-mongo-db
+          image: mongo
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "1000m"
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+          imagePullPolicy: Always
+          env: 
+          - name: MONGO_INITDB_ROOT_USERNAME
+            value: admin                
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            value: admin                
+          ports: 
+            - containerPort: 27017
+              name: mongodb                
+          volumeMounts: 
+            - name: blue-mongodb-pv
+              mountPath: /data/db                
+      volumes: 
+      - name: blue-mongodb-pv
+        persistentVolumeClaim: 
+          claimName: blue-mongodb-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: blue-mongo-db
+  labels: 
+      app: blue-mongo-db
+spec:   
+  selector: 
+      app: blue-mongo-db 
+  ports: 
+    - name: mongodb
+      port: 27017
+      nodePort: 30332
+  type: NodePort                 

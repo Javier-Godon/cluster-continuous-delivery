@@ -1,7 +1,7 @@
 apiVersion: gitops.bluesolution.es/v1alpha1
-kind: NexusWorkload
+kind: KafkaWorkload
 metadata:
-  name: nexus-workload
+  name: kafka-workload
   namespace: default
 spec:
-  namespace: nexus
+  namespace: kafka

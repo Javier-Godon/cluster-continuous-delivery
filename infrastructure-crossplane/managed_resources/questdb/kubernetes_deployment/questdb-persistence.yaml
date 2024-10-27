@@ -1,0 +1,30 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: blue-questdb-pv-volume
+  labels:
+    type: local
+    app: blue-questdb
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain  
+  hostPath:
+    path: "/mnt/data/questdb-volume"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: blue-questdb-pv-claim
+  labels:
+    app: blue-questdb
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
