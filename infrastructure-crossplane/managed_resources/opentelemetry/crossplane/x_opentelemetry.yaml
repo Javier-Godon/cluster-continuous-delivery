@@ -1,0 +1,79 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: opentelemetrycompositeworkloads.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: OpentelemetryCompositeWorkload
+  resources:
+    - name: opentelemetryNamespace
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: opentelemetry-namespace
+          # namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: opentelemetry
+          providerConfigRef:
+            name: kubernetes-provider
+      # patches:
+      #   - fromFieldPath: "spec.namespace"  # Use namespace from the claim
+      #     toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      #     policy:
+      #       fromFieldPath: "Optional"      
+
+    - name: opentelemetryCollector
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: opentelemetry.io/v1beta1
+              kind: OpenTelemetryCollector
+              metadata:
+                name: otel-collector
+                namespace: opentelemetry
+              spec:
+                config:
+                  receivers:
+                    otlp:
+                      protocols:
+                        grpc:
+                          endpoint: 0.0.0.0:4317
+                        http:
+                          endpoint: 0.0.0.0:4318
+                  processors:
+                    memory_limiter:
+                      check_interval: 1s
+                      limit_percentage: 75
+                      spike_limit_percentage: 15
+                    batch:
+                      send_batch_size: 10000
+                      timeout: 10s
+
+                  exporters:
+                    debug: {}
+
+                  service:
+                    pipelines:
+                      traces:
+                        receivers: [otlp]
+                        processors: [memory_limiter, batch]
+                        exporters: [debug]       
+      patches:
+      # The opentelemetryCollector resource specifies the namespace using a patch from namespaceOpentelemetry,
+      #  which ensures the namespace is populated dynamically before the collector is applied.
+        - fromFieldPath: "spec.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+          policy:
+            fromFieldPath: "Required"                  

@@ -1,0 +1,7 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: OpentelemetryWorkload
+metadata:
+  name: opentelemetry-workload
+  namespace: default
+spec:
+  namespace: opentelemetry
