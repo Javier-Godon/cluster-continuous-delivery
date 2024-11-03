@@ -17,6 +17,9 @@ To list all package versions: (providers, configurations and functions)
 ```
  k get pkgrev
 ```
+
+QUESTDB:
+
  clone repository from: https://github.com/questdb/questdb-operator.git , delete all folders and files except config
  in manager/kustomization.yaml change the version for the desired questdb-operator version (in my case newTag: v0.5.1)
  over questdb-operator/config execute: k apply -k default
@@ -76,3 +79,22 @@ k apply -k default -n mongodb
 ```
 then we will use: mongodb.com_v1_mongodbcommunity_additional_mongod_config_cr.yaml
 wich is in: mongodb/operator/kubernetes_deployment/community_operator/mongodb-kubernetes-operator/config/samples/
+
+GRAFANA
+
+```
+k create -f grafana-operator-v5.14.0.yaml 
+```
+
+ELASTICSEARCH
+
+```
+kubectl port-forward service/blue-kibana-kb-http 5601 -n elk
+```
+
+```
+kubectl get secret blue-elasticsearch-es-elastic-user -n elk -o=jsonpath='{.data.elastic}' | base64 --decode; echo
+
+kubectl get secret/blue-elasticsearch-apm-server-apm-token -o go-template='{{index .data "secret-token" | base64decode}}' -n elk
+```
+

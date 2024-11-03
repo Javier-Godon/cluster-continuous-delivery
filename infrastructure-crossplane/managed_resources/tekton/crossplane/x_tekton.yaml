@@ -1,0 +1,78 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: tektoncompositeworkloads.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: TektonCompositeWorkload
+  resources:
+    - name: tektonNamespace
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: tekton-namespace
+          # namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: tekton-pipelines
+          providerConfigRef:
+            name: kubernetes-provider
+
+    - name: tektonKonfigAll
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: operator.tekton.dev/v1alpha1
+              kind: TektonConfig
+              metadata:
+                name: config
+              spec:
+                profile: all
+                targetNamespace: tekton-pipelines
+                pruner:
+                  resources:
+                  - pipelinerun
+                  - taskrun
+                  keep: 100
+                  schedule: "0 8 * * *" 
+    - name: tektonIngress
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: networking.k8s.io/v1
+              kind: Ingress
+              metadata:
+                name: tekton-dashboard
+                namespace: tekton-pipelines
+                annotations:
+                  kubernetes.io/ingress.class: nginx
+                  nginx.ingress.kubernetes.io/rewrite-target: /$2 
+              spec:
+                ingressClassName: nginx
+                rules:
+                - host: blue-ci-cd.com
+                  http:
+                    paths:
+                    - pathType: ImplementationSpecific
+                      path: /tekton(/|$)(.*)
+                      backend:
+                        service:
+                          name: tekton-dashboard
+                          port:
+                            number: 9097                  

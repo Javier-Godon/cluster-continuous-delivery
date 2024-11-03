@@ -1,0 +1,25 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: grafanacompositeworkloads.gitops.bluesolution.es
+spec:
+  group: gitops.bluesolution.es
+  names:
+    kind: GrafanaCompositeWorkload
+    plural: grafanacompositeworkloads
+  claimNames:
+    kind: GrafanaWorkload
+    plural: grafanaworkloads
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                namespace:
+                  type: string

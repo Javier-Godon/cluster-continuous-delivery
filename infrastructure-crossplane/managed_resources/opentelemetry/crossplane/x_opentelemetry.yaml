@@ -52,6 +52,12 @@ spec:
                           endpoint: 0.0.0.0:4317
                         http:
                           endpoint: 0.0.0.0:4318
+                    prometheus:
+                      config:
+                        scrape_configs:
+                          - job_name: 'node_exporter'
+                            static_configs:
+                              - targets: ['node-exporter.monitoring:9100']      
                   processors:
                     memory_limiter:
                       check_interval: 1s
@@ -63,13 +69,30 @@ spec:
 
                   exporters:
                     debug: {}
+                    otlp/elastic:
+                      endpoint: "blue-elasticsearch-apm-server-apm-http.elk.svc.cluster.local:8200"
+                      headers:
+                        Authorization: "Bearer 970WzPaYo9H8S838Pl6K7eud"
+                      tls:
+                        insecure: true
+                    prometheusremotewrite:
+                      endpoint: "http://questdb-single-local.questdb:9000/insert"
+                      tls: 
+                        insecure: true
 
-                  service:
+                  service:                    
                     pipelines:
+                      metrics:
+                        receivers: [otlp, prometheus]
+                        exporters: [otlp/elastic]
                       traces:
                         receivers: [otlp]
-                        processors: [memory_limiter, batch]
-                        exporters: [debug]       
+                        processors: [batch]
+                        exporters: [debug]
+                      logs:
+                        receivers: [otlp]
+                        processors: []
+                        exporters: [otlp/elastic]          
       patches:
       # The opentelemetryCollector resource specifies the namespace using a patch from namespaceOpentelemetry,
       #  which ensures the namespace is populated dynamically before the collector is applied.

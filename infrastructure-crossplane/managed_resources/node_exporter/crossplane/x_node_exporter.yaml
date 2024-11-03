@@ -1,0 +1,137 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: nodeexportercompositeworkloads.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: NodeExporterCompositeWorkload
+  resources:
+    - name: nodeexporterNamespace
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: nodeexporter-namespace
+          # namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: monitoring
+          providerConfigRef:
+            name: kubernetes-provider
+    - name: daemonsetNodeExporter
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: apps/v1
+              kind: DaemonSet
+              metadata:
+                labels:
+                  app.kubernetes.io/component: exporter
+                  app.kubernetes.io/name: node-exporter
+                name: node-exporter
+                namespace: monitoring
+              spec:
+                selector:
+                  matchLabels:
+                    app.kubernetes.io/component: exporter
+                    app.kubernetes.io/name: node-exporter
+                template:
+                  metadata:
+                    labels:
+                      app.kubernetes.io/component: exporter
+                      app.kubernetes.io/name: node-exporter
+                  spec:
+                    containers:
+                    - args:
+                      - --path.sysfs=/host/sys
+                      - --path.rootfs=/host/root
+                      - --no-collector.wifi
+                      - --no-collector.hwmon
+                      - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/pods/.+)($|/)
+                      - --collector.netclass.ignored-devices=^(veth.*)$
+                      name: node-exporter
+                      image: prom/node-exporter:v1.8.2
+                      ports:
+                        - containerPort: 9100
+                          protocol: TCP
+                      resources:
+                        limits:
+                          cpu: 250m
+                          memory: 180Mi
+                        requests:
+                          cpu: 102m
+                          memory: 180Mi
+                      volumeMounts:
+                      - mountPath: /host/sys
+                        mountPropagation: HostToContainer
+                        name: sys
+                        readOnly: true
+                      - mountPath: /host/root
+                        mountPropagation: HostToContainer
+                        name: root
+                        readOnly: true
+                    volumes:
+                    - hostPath:
+                        path: /sys
+                      name: sys
+                    - hostPath:
+                        path: /
+                      name: root        
+      patches:
+        # The opentelemetryCollector resource specifies the namespace using a patch from namespaceOpentelemetry,
+        #  which ensures the namespace is populated dynamically before the collector is applied.
+        - fromFieldPath: "spec.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+          policy:
+            fromFieldPath: "Required"
+
+    - name: serviceNodeExporter
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:  
+              kind: Service
+              apiVersion: v1
+              metadata:
+                name: node-exporter
+                namespace: monitoring
+                annotations:
+                    prometheus.io/scrape: 'true'
+                    prometheus.io/port:   '9100'
+              spec:
+                selector:
+                    app.kubernetes.io/component: exporter
+                    app.kubernetes.io/name: node-exporter
+                ports:
+                - name: node-exporter
+                  protocol: TCP
+                  port: 9100
+                  targetPort: 9100 
+        patches:
+        # The opentelemetryCollector resource specifies the namespace using a patch from namespaceOpentelemetry,
+        #  which ensures the namespace is populated dynamically before the collector is applied.
+          - fromFieldPath: "spec.namespace"
+            toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+            policy:
+              fromFieldPath: "Required"                  
+
+
+
+
+
+
+                         

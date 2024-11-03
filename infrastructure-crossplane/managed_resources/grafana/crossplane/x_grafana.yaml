@@ -1,0 +1,208 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: grafanacompositeworkloads.gitops.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: gitops.bluesolution.es/v1alpha1
+    kind: GrafanaCompositeWorkload
+  resources:
+    - name: grafanaNamespace
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: grafana-namespace
+          # namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: grafana
+          providerConfigRef:
+            name: kubernetes-provider
+      # patches:
+      #   - fromFieldPath: "spec.namespace"  # Use namespace from the claim
+      #     toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+      #     policy:
+      #       fromFieldPath: "Optional" 
+      
+    - name: persistentVolumeBlueGrafanaPvVolume
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              kind: PersistentVolume
+              apiVersion: v1
+              metadata:
+                name: blue-grafana-pv-volume
+                namespace: grafana  
+                labels:
+                  type: local
+                  app: blue-grafana
+              spec:
+                storageClassName: manual
+                capacity:
+                  storage: 20Gi
+                accessModes:
+                  - ReadWriteMany
+                persistentVolumeReclaimPolicy: Retain  
+                hostPath:
+                  path: "/mnt/data/grafana-volume"
+        patches:
+          - fromFieldPath: "spec.namespace"  # Use namespace from the claim
+            toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+            policy:
+              fromFieldPath: "Optional"           
+
+    - name: persistenceVolumeClaimBlueGrafanaPvClaim
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              kind: PersistentVolumeClaim
+              apiVersion: v1
+              metadata:
+                name: blue-grafana-pv-claim
+                namespace: grafana  
+                labels:
+                  app: blue-grafana
+              spec:
+                storageClassName: manual
+                accessModes:
+                  - ReadWriteMany
+                resources:
+                  requests:
+                    storage: 20Gi
+        patches:
+          - fromFieldPath: "spec.namespace"  # Use namespace from the claim
+            toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+            policy:
+              fromFieldPath: "Optional"               
+
+    - name: grafanaInstance
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: grafana.integreatly.org/v1beta1
+              kind: Grafana
+              metadata:
+                name: grafana
+                labels:
+                  dashboards: "grafana"
+              spec:
+                config:
+                  log:
+                    mode: "console"
+                  security:
+                    admin_user: admin
+                    admin_password: admin
+                  # grafana.ini:
+                  #   server: |
+                  #     [server]
+                  #     domain = blue-ci-cd.com
+                  #     root_url = http://blue-ci-cd.com/grafana
+                  #     serve_from_sub_path = true
+              deployment:
+                spec:
+                  template:
+                    spec:
+                      containers:
+                        - name: grafana
+                          image: grafana/grafana:11.3.0
+                          securityContext:
+                            allowPrivilegeEscalation: true
+                            readOnlyRootFilesystem: false
+                          readinessProbe:
+                            failureThreshold: 3
+                      volumes:
+                        - name: grafanadata
+                          persistentVolumeClaim:
+                            claimName: blue-grafana-pv-claim  
+                      
+      #           ingress:
+      #             # enabled: true
+      #             # path: /grafana
+      #             # hostname: blue-ci-cd.com
+      #             # annotations:
+      #             #   nginx.ingress.kubernetes.io/rewrite-target: /grafana/$1
+      #             spec:
+      #               ingressClassName: nginx
+      #               rules:
+      #                 - host: blue-ci-cd.com
+      #                   http:
+      #                     paths:
+      #                       - backend:
+      #                           service:
+      #                             name: grafana-service
+      #                             port:
+      #                               number: 3000
+      #                         path: /grafana(/|$)(.*)
+      #                         pathType: Prefix        
+      patches:
+      # The grafanaCollector resource specifies the namespace using a patch from namespaceGrafana,
+      #  which ensures the namespace is populated dynamically before the collector is applied.
+        - fromFieldPath: "spec.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+          policy:
+            fromFieldPath: "Required"  
+
+    - name: grafanaIngress
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest: 
+              apiVersion: networking.k8s.io/v1
+              kind: Ingress
+              metadata:
+                name: grafana-blue-ingress
+                namespace: grafana
+                # annotations:
+                  # nginx.ingress.kubernetes.io/rewrite-target: /$1
+                #   nginx.ingress.kubernetes.io/upstream-vhost: $service_name.$namespace.svc.cluster.local:8084
+                #   nginx.ingress.kubernetes.io/configuration-snippet: |
+                #     proxy_set_header Origin "";
+                #     proxy_hide_header l5d-remote-ip;
+                #     proxy_hide_header l5d-server-id;      
+                #   nginx.ingress.kubernetes.io/auth-type: basic
+                #   nginx.ingress.kubernetes.io/auth-secret: web-ingress-auth
+                #   nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
+              spec:
+                ingressClassName: nginx
+                rules:
+                - host: blue-ci-cd.com
+                  http:
+                    paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: grafana-service
+                          port:
+                            number: 3000 
+        patches:
+      # The grafanaCollector resource specifies the namespace using a patch from namespaceGrafana,
+      #  which ensures the namespace is populated dynamically before the collector is applied.
+        - fromFieldPath: "spec.namespace"
+          toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+          policy:
+            fromFieldPath: "Required"                                              

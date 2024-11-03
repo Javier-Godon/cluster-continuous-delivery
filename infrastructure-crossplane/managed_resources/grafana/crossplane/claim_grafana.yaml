@@ -1,0 +1,7 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: GrafanaWorkload
+metadata:
+  name: grafana-workload
+  namespace: default
+spec:
+  namespace: grafana

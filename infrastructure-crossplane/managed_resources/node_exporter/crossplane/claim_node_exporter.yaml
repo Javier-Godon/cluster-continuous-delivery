@@ -1,0 +1,7 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: NodeExporterWorkload
+metadata:
+  name: nodeexporter-workload
+  namespace: default
+spec:
+  namespace: monitoring

@@ -1,0 +1,7 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: TektonWorkload
+metadata:
+  name: tekton-workload
+  namespace: default
+spec:
+  namespace: tekton-pipelines
