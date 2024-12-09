@@ -18,5 +18,3 @@ spec:
           name: basic
         spec:
           source: github.com/Javier-Godon/cluster-continuous-delivery/blob/main/apps/deployments/pokedex/dev/main.k
-          # providerConfigRef:
-          #   name: kubernetes-provider
