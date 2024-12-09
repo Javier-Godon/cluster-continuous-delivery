@@ -1,0 +1,22 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: pokedexcompositeworkloads.deployments.bluesolution.es
+spec:
+  compositeTypeRef:
+    apiVersion: deployments.bluesolution.es/v1alpha1
+    kind: PokedexCompositeWorkload
+  mode: Pipeline
+  pipeline:
+    - step: normal
+      functionRef:
+        name: function-kcl
+      input:
+        apiVersion: krm.kcl.dev/v1alpha1
+        kind: KCLInput
+        metadata:
+          name: basic
+        spec:
+          source: github.com/Javier-Godon/cluster-continuous-delivery/blob/main/apps/deployments/pokedex/dev/main.k
+          # providerConfigRef:
+          #   name: kubernetes-provider
