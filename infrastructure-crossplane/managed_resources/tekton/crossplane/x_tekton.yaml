@@ -7,12 +7,12 @@ spec:
     apiVersion: gitops.bluesolution.es/v1alpha1
     kind: TektonCompositeWorkload
   resources:
-    - name: tektonNamespace
+    - name: tektonPipelinesNamespace
       base:
         apiVersion: kubernetes.crossplane.io/v1alpha2
         kind: Object
         metadata:
-          name: tekton-namespace
+          name: tekton-pipelines-namespace
           # namespace: default
         spec:
           forProvider:
@@ -24,6 +24,23 @@ spec:
           providerConfigRef:
             name: kubernetes-provider
 
+    - name: tektonWorkspaceNamespace
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        metadata:
+          name: tekton-workspace-namespace
+          # namespace: default
+        spec:
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: tekton-workspace
+          providerConfigRef:
+            name: kubernetes-provider
+
     - name: tektonKonfigAll
       base:
         apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -32,7 +49,7 @@ spec:
           providerConfigRef:
             name: kubernetes-provider
           forProvider:
-            manifest: 
+            manifest:
               apiVersion: operator.tekton.dev/v1alpha1
               kind: TektonConfig
               metadata:
@@ -42,10 +59,11 @@ spec:
                 targetNamespace: tekton-pipelines
                 pruner:
                   resources:
-                  - pipelinerun
-                  - taskrun
+                    - pipelinerun
+                    - taskrun
                   keep: 100
-                  schedule: "0 8 * * *" 
+                  schedule: "0 8 * * *"
+
     - name: tektonIngress
       base:
         apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -54,7 +72,7 @@ spec:
           providerConfigRef:
             name: kubernetes-provider
           forProvider:
-            manifest: 
+            manifest:
               apiVersion: networking.k8s.io/v1
               kind: Ingress
               metadata:
@@ -62,17 +80,1299 @@ spec:
                 namespace: tekton-pipelines
                 annotations:
                   kubernetes.io/ingress.class: nginx
-                  nginx.ingress.kubernetes.io/rewrite-target: /$2 
+                  nginx.ingress.kubernetes.io/rewrite-target: /$2
               spec:
                 ingressClassName: nginx
                 rules:
-                - host: blue-ci-cd.com
-                  http:
-                    paths:
-                    - pathType: ImplementationSpecific
-                      path: /tekton(/|$)(.*)
-                      backend:
-                        service:
-                          name: tekton-dashboard
-                          port:
-                            number: 9097                  
+                  - host: blue-ci-cd.com
+                    http:
+                      paths:
+                        - pathType: ImplementationSpecific
+                          path: /tekton(/|$)(.*)
+                          backend:
+                            service:
+                              name: tekton-dashboard
+                              port:
+                                number: 9097
+    # *********************************TEKTON TASKS ********************************************************
+    - name: gitCloneTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Task
+              metadata:
+                name: git-clone
+                namespace: tekton-workspace
+                labels:
+                  app.kubernetes.io/version: "0.9"
+                annotations:
+                  tekton.dev/pipelines.minVersion: "0.38.0"
+                  tekton.dev/categories: Git
+                  tekton.dev/tags: git
+                  tekton.dev/displayName: "git clone"
+                  tekton.dev/platforms: "linux/amd64,linux/s390x,linux/ppc64le,linux/arm64"
+              spec:
+                description: >-
+                  These Tasks are Git tasks to work with repositories used by other tasks
+                  in your Pipeline.
+
+                  The git-clone Task will clone a repo from the provided url into the
+                  output Workspace. By default the repo will be cloned into the root of
+                  your Workspace. You can clone into a subdirectory by setting this Task's
+                  subdirectory param. This Task also supports sparse checkouts. To perform
+                  a sparse checkout, pass a list of comma separated directory patterns to
+                  this Task's sparseCheckoutDirectories param.
+                workspaces:
+                  - name: output
+                    description: The git repo will be cloned onto the volume backing this Workspace.
+                  - name: ssh-directory
+                    optional: true
+                    description: |
+                      A .ssh directory with private key, known_hosts, config, etc. Copied to
+                      the user's home before git commands are executed. Used to authenticate
+                      with the git remote when performing the clone. Binding a Secret to this
+                      Workspace is strongly recommended over other volume types.
+                  - name: basic-auth
+                    optional: true
+                    description: |
+                      A Workspace containing a .gitconfig and .git-credentials file. These
+                      will be copied to the user's home before any git commands are run. Any
+                      other files in this Workspace are ignored. It is strongly recommended
+                      to use ssh-directory over basic-auth whenever possible and to bind a
+                      Secret to this Workspace over other volume types.
+                  - name: ssl-ca-directory
+                    optional: true
+                    description: |
+                      A workspace containing CA certificates, this will be used by Git to
+                      verify the peer with when fetching or pushing over HTTPS.
+                params:
+                  - name: url
+                    description: Repository URL to clone from.
+                    type: string
+                  - name: revision
+                    description: Revision to checkout. (branch, tag, sha, ref, etc...)
+                    type: string
+                    default: ""
+                  - name: refspec
+                    description: Refspec to fetch before checking out revision.
+                    default: ""
+                  - name: submodules
+                    description: Initialize and fetch git submodules.
+                    type: string
+                    default: "true"
+                  - name: depth
+                    description: Perform a shallow clone, fetching only the most recent N commits.
+                    type: string
+                    default: "1"
+                  - name: sslVerify
+                    description: Set the `http.sslVerify` global git config. Setting this to `false` is not advised unless you are sure that you trust your git remote.
+                    type: string
+                    default: "true"
+                  - name: crtFileName
+                    description: file name of mounted crt using ssl-ca-directory workspace. default value is ca-bundle.crt.
+                    type: string
+                    default: "ca-bundle.crt"
+                  - name: subdirectory
+                    description: Subdirectory inside the `output` Workspace to clone the repo into.
+                    type: string
+                    default: ""
+                  - name: sparseCheckoutDirectories
+                    description: Define the directory patterns to match or exclude when performing a sparse checkout.
+                    type: string
+                    default: ""
+                  - name: deleteExisting
+                    description: Clean out the contents of the destination directory if it already exists before cloning.
+                    type: string
+                    default: "true"
+                  - name: httpProxy
+                    description: HTTP proxy server for non-SSL requests.
+                    type: string
+                    default: ""
+                  - name: httpsProxy
+                    description: HTTPS proxy server for SSL requests.
+                    type: string
+                    default: ""
+                  - name: noProxy
+                    description: Opt out of proxying HTTP/HTTPS requests.
+                    type: string
+                    default: ""
+                  - name: verbose
+                    description: Log the commands that are executed during `git-clone`'s operation.
+                    type: string
+                    default: "true"
+                  - name: gitInitImage
+                    description: The image providing the git-init binary that this Task runs.
+                    type: string
+                    default: "gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.40.2"
+                  - name: userHome
+                    description: |
+                      Absolute path to the user's home directory.
+                    type: string
+                    default: "/home/git"
+                results:
+                  - name: commit
+                    description: The precise commit SHA that was fetched by this Task.
+                  - name: url
+                    description: The precise URL that was fetched by this Task.
+                  - name: committer-date
+                    description: The epoch timestamp of the commit that was fetched by this Task.
+                steps:
+                  - name: clone
+                    image: "$(params.gitInitImage)"
+                    env:
+                      - name: HOME
+                        value: "$(params.userHome)"
+                      - name: PARAM_URL
+                        value: $(params.url)
+                      - name: PARAM_REVISION
+                        value: $(params.revision)
+                      - name: PARAM_REFSPEC
+                        value: $(params.refspec)
+                      - name: PARAM_SUBMODULES
+                        value: $(params.submodules)
+                      - name: PARAM_DEPTH
+                        value: $(params.depth)
+                      - name: PARAM_SSL_VERIFY
+                        value: $(params.sslVerify)
+                      - name: PARAM_CRT_FILENAME
+                        value: $(params.crtFileName)
+                      - name: PARAM_SUBDIRECTORY
+                        value: $(params.subdirectory)
+                      - name: PARAM_DELETE_EXISTING
+                        value: $(params.deleteExisting)
+                      - name: PARAM_HTTP_PROXY
+                        value: $(params.httpProxy)
+                      - name: PARAM_HTTPS_PROXY
+                        value: $(params.httpsProxy)
+                      - name: PARAM_NO_PROXY
+                        value: $(params.noProxy)
+                      - name: PARAM_VERBOSE
+                        value: $(params.verbose)
+                      - name: PARAM_SPARSE_CHECKOUT_DIRECTORIES
+                        value: $(params.sparseCheckoutDirectories)
+                      - name: PARAM_USER_HOME
+                        value: $(params.userHome)
+                      - name: WORKSPACE_OUTPUT_PATH
+                        value: $(workspaces.output.path)
+                      - name: WORKSPACE_SSH_DIRECTORY_BOUND
+                        value: $(workspaces.ssh-directory.bound)
+                      - name: WORKSPACE_SSH_DIRECTORY_PATH
+                        value: $(workspaces.ssh-directory.path)
+                      - name: WORKSPACE_BASIC_AUTH_DIRECTORY_BOUND
+                        value: $(workspaces.basic-auth.bound)
+                      - name: WORKSPACE_BASIC_AUTH_DIRECTORY_PATH
+                        value: $(workspaces.basic-auth.path)
+                      - name: WORKSPACE_SSL_CA_DIRECTORY_BOUND
+                        value: $(workspaces.ssl-ca-directory.bound)
+                      - name: WORKSPACE_SSL_CA_DIRECTORY_PATH
+                        value: $(workspaces.ssl-ca-directory.path)
+                    securityContext:
+                      runAsNonRoot: true
+                      runAsUser: 65532
+                    script: |
+                      #!/usr/bin/env sh
+                      set -eu
+
+                      if [ "${PARAM_VERBOSE}" = "true" ] ; then
+                        set -x
+                      fi
+
+                      if [ "${WORKSPACE_BASIC_AUTH_DIRECTORY_BOUND}" = "true" ] ; then
+                        cp "${WORKSPACE_BASIC_AUTH_DIRECTORY_PATH}/.git-credentials" "${PARAM_USER_HOME}/.git-credentials"
+                        cp "${WORKSPACE_BASIC_AUTH_DIRECTORY_PATH}/.gitconfig" "${PARAM_USER_HOME}/.gitconfig"
+                        chmod 400 "${PARAM_USER_HOME}/.git-credentials"
+                        chmod 400 "${PARAM_USER_HOME}/.gitconfig"
+                      fi
+
+                      if [ "${WORKSPACE_SSH_DIRECTORY_BOUND}" = "true" ] ; then
+                        cp -R "${WORKSPACE_SSH_DIRECTORY_PATH}" "${PARAM_USER_HOME}"/.ssh
+                        chmod 700 "${PARAM_USER_HOME}"/.ssh
+                        chmod -R 400 "${PARAM_USER_HOME}"/.ssh/*
+                      fi
+
+                      if [ "${WORKSPACE_SSL_CA_DIRECTORY_BOUND}" = "true" ] ; then
+                        export GIT_SSL_CAPATH="${WORKSPACE_SSL_CA_DIRECTORY_PATH}"
+                        if [ "${PARAM_CRT_FILENAME}" != "" ] ; then
+                            export GIT_SSL_CAINFO="${WORKSPACE_SSL_CA_DIRECTORY_PATH}/${PARAM_CRT_FILENAME}"
+                        fi
+                      fi
+                      CHECKOUT_DIR="${WORKSPACE_OUTPUT_PATH}/${PARAM_SUBDIRECTORY}"
+
+                      cleandir() {
+                        # Delete any existing contents of the repo directory if it exists.
+                        #
+                        # We don't just "rm -rf ${CHECKOUT_DIR}" because ${CHECKOUT_DIR} might be "/"
+                        # or the root of a mounted volume.
+                        if [ -d "${CHECKOUT_DIR}" ] ; then
+                          # Delete non-hidden files and directories
+                          rm -rf "${CHECKOUT_DIR:?}"/*
+                          # Delete files and directories starting with . but excluding ..
+                          rm -rf "${CHECKOUT_DIR}"/.[!.]*
+                          # Delete files and directories starting with .. plus any other character
+                          rm -rf "${CHECKOUT_DIR}"/..?*
+                        fi
+                      }
+
+                      if [ "${PARAM_DELETE_EXISTING}" = "true" ] ; then
+                        cleandir || true
+                      fi
+
+                      test -z "${PARAM_HTTP_PROXY}" || export HTTP_PROXY="${PARAM_HTTP_PROXY}"
+                      test -z "${PARAM_HTTPS_PROXY}" || export HTTPS_PROXY="${PARAM_HTTPS_PROXY}"
+                      test -z "${PARAM_NO_PROXY}" || export NO_PROXY="${PARAM_NO_PROXY}"
+
+                      git config --global --add safe.directory "${WORKSPACE_OUTPUT_PATH}"
+                      /ko-app/git-init \
+                        -url="${PARAM_URL}" \
+                        -revision="${PARAM_REVISION}" \
+                        -refspec="${PARAM_REFSPEC}" \
+                        -path="${CHECKOUT_DIR}" \
+                        -sslVerify="${PARAM_SSL_VERIFY}" \
+                        -submodules="${PARAM_SUBMODULES}" \
+                        -depth="${PARAM_DEPTH}" \
+                        -sparseCheckoutDirectories="${PARAM_SPARSE_CHECKOUT_DIRECTORIES}"
+                      cd "${CHECKOUT_DIR}"
+                      RESULT_SHA="$(git rev-parse HEAD)"
+                      EXIT_CODE="$?"
+                      if [ "${EXIT_CODE}" != 0 ] ; then
+                        exit "${EXIT_CODE}"
+                      fi
+                      RESULT_COMMITTER_DATE="$(git log -1 --pretty=%ct)"
+                      printf "%s" "${RESULT_COMMITTER_DATE}" > "$(results.committer-date.path)"
+                      printf "%s" "${RESULT_SHA}" > "$(results.commit.path)"
+                      printf "%s" "${PARAM_URL}" > "$(results.url.path)"
+
+    - name: buildahTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1
+              kind: Task
+              metadata:
+                name: buildah
+                namespace: tekton-workspace
+                labels:
+                  app.kubernetes.io/version: "0.8"
+                annotations:
+                  tekton.dev/categories: Image Build
+                  tekton.dev/pipelines.minVersion: "0.50.0"
+                  tekton.dev/tags: image-build
+                  tekton.dev/platforms: "linux/amd64,linux/s390x,linux/ppc64le,linux/arm64"
+                  tekton.dev/displayName: buildah
+              spec:
+                description: >-
+                  Buildah task builds source into a container image and
+                  then pushes it to a container registry.
+
+                  Buildah Task builds source into a container image using Project Atomic's
+                  Buildah build tool.It uses Buildah's support for building from Dockerfiles,
+                  using its buildah bud command.This command executes the directives in the
+                  Dockerfile to assemble a container image, then pushes that image to a
+                  container registry.
+
+                params:
+                  - name: IMAGE
+                    description: Reference of the image buildah will produce.
+                  - name: BUILDER_IMAGE
+                    description: The location of the buildah builder image.
+                    default: quay.io/buildah/stable:v1
+                  - name: STORAGE_DRIVER
+                    description: Set buildah storage driver
+                    default: overlay
+                  - name: DOCKERFILE
+                    description: Path to the Dockerfile to build.
+                    default: ./Dockerfile
+                  - name: CONTEXT
+                    description: Path to the directory to use as context.
+                    default: .
+                  - name: TLSVERIFY
+                    description: Verify the TLS on the registry endpoint (for push/pull to a non-TLS registry)
+                    default: "true"
+                  - name: FORMAT
+                    description: The format of the built container, oci or docker
+                    default: "oci"
+                  - name: BUILD_EXTRA_ARGS
+                    description: Extra parameters passed for the build command when building images. WARNING - must be sanitized to avoid command injection
+                    default: ""
+                  - name: PUSH_EXTRA_ARGS
+                    description: Extra parameters passed for the push command when pushing images. WARNING - must be sanitized to avoid command injection
+                    type: string
+                    default: ""
+                  - name: SKIP_PUSH
+                    description: Skip pushing the built image
+                    default: "false"
+                  - name: BUILD_ARGS
+                    description: Dockerfile build arguments, array of key=value
+                    type: array
+                    default:
+                      - ""
+                workspaces:
+                  - name: source
+                  - name: sslcertdir
+                    optional: true
+                  - name: dockerconfig
+                    description: >-
+                      An optional workspace that allows providing a .docker/config.json file
+                      for Buildah to access the container registry.
+                      The file should be placed at the root of the Workspace with name config.json.
+                    optional: true
+                results:
+                  - name: IMAGE_DIGEST
+                    description: Digest of the image just built.
+                  - name: IMAGE_URL
+                    description: Image repository where the built image would be pushed to
+                steps:
+                  - name: build-and-push
+                    image: $(params.BUILDER_IMAGE)
+                    workingDir: $(workspaces.source.path)
+                    env:
+                      - name: PARAM_IMAGE
+                        value: $(params.IMAGE)
+                      - name: PARAM_STORAGE_DRIVER
+                        value: $(params.STORAGE_DRIVER)
+                      - name: PARAM_DOCKERFILE
+                        value: $(params.DOCKERFILE)
+                      - name: PARAM_CONTEXT
+                        value: $(params.CONTEXT)
+                      - name: PARAM_TLSVERIFY
+                        value: $(params.TLSVERIFY)
+                      - name: PARAM_FORMAT
+                        value: $(params.FORMAT)
+                      - name: PARAM_BUILD_EXTRA_ARGS
+                        value: $(params.BUILD_EXTRA_ARGS)
+                      - name: PARAM_PUSH_EXTRA_ARGS
+                        value: $(params.PUSH_EXTRA_ARGS)
+                      - name: PARAM_SKIP_PUSH
+                        value: $(params.SKIP_PUSH)
+                    args:
+                      - $(params.BUILD_ARGS[*])
+                    script: |
+                      BUILD_ARGS=()
+                      for buildarg in "$@"
+                      do
+                        BUILD_ARGS+=("--build-arg=$buildarg")
+                      done
+                      [ "$(workspaces.sslcertdir.bound)" = "true" ] && CERT_DIR_FLAG="--cert-dir=$(workspaces.sslcertdir.path)"
+                      [ "$(workspaces.dockerconfig.bound)" = "true" ] && DOCKER_CONFIG="$(workspaces.dockerconfig.path)" && export DOCKER_CONFIG
+                      # build the image (CERT_DIR_FLAG should be omitted if empty and BUILD_EXTRA_ARGS can contain multiple args)
+                      # shellcheck disable=SC2046,SC2086
+                      buildah ${CERT_DIR_FLAG} "--storage-driver=${PARAM_STORAGE_DRIVER}" bud "${BUILD_ARGS[@]}" ${PARAM_BUILD_EXTRA_ARGS} \
+                        "--format=${PARAM_FORMAT}" "--tls-verify=${PARAM_TLSVERIFY}" \
+                        -f "${PARAM_DOCKERFILE}" -t "${PARAM_IMAGE}" "${PARAM_CONTEXT}"
+                      [ "${PARAM_SKIP_PUSH}" = "true" ] && echo "Push skipped" && exit 0
+                      # push the image (CERT_DIR_FLAG should be omitted if empty and PUSH_EXTRA_ARGS can contain multiple args)
+                      # shellcheck disable=SC2046,SC2086
+                      buildah ${CERT_DIR_FLAG} "--storage-driver=${PARAM_STORAGE_DRIVER}" push ${PARAM_PUSH_EXTRA_ARGS} \
+                        "--tls-verify=${PARAM_TLSVERIFY}" --digestfile /tmp/image-digest "${PARAM_IMAGE}" \
+                        "docker://${PARAM_IMAGE}"
+                      tee "$(results.IMAGE_DIGEST.path)" < /tmp/image-digest
+                      printf '%s' "${PARAM_IMAGE}" | tee "$(results.IMAGE_URL.path)"
+                    volumeMounts:
+                      - name: varlibcontainers
+                        mountPath: /var/lib/containers
+                    securityContext:
+                      privileged: true
+                volumes:
+                  - name: varlibcontainers
+                    emptyDir: {}
+
+    - name: kanikoTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Task
+              metadata:
+                name: kaniko
+                namespace: tekton-workspace
+                labels:
+                  app.kubernetes.io/version: "0.6"
+                annotations:
+                  tekton.dev/pipelines.minVersion: "0.17.0"
+                  tekton.dev/categories: Image Build
+                  tekton.dev/tags: image-build
+                  tekton.dev/displayName: "Build and upload container image using Kaniko"
+                  tekton.dev/platforms: "linux/amd64,linux/arm64,linux/ppc64le"
+              spec:
+                description: >-
+                  This Task builds a simple Dockerfile with kaniko and pushes to a registry.
+                  This Task stores the image name and digest as results, allowing Tekton Chains to pick up
+                  that an image was built & sign it.
+                params:
+                  - name: IMAGE
+                    description: Name (reference) of the image to build.
+                  - name: DOCKERFILE
+                    description: Path to the Dockerfile to build.
+                    default: ./Dockerfile
+                  - name: CONTEXT
+                    description: The build context used by Kaniko.
+                    default: ./
+                  - name: EXTRA_ARGS
+                    type: array
+                    default: []
+                  - name: BUILDER_IMAGE
+                    description: The image on which builds will run (default is v1.5.1)
+                    default: gcr.io/kaniko-project/executor:v1.5.1@sha256:c6166717f7fe0b7da44908c986137ecfeab21f31ec3992f6e128fff8a94be8a5
+                workspaces:
+                  - name: source
+                    description: Holds the context and Dockerfile
+                  - name: dockerconfig
+                    description: Includes a docker `config.json`
+                    optional: true
+                    mountPath: /kaniko/.docker
+                results:
+                  - name: IMAGE_DIGEST
+                    description: Digest of the image just built.
+                  - name: IMAGE_URL
+                    description: URL of the image just built.
+                steps:
+                  - name: build-and-push
+                    workingDir: $(workspaces.source.path)
+                    image: $(params.BUILDER_IMAGE)
+                    args:
+                      - $(params.EXTRA_ARGS)
+                      - --dockerfile=$(params.DOCKERFILE)
+                      - --context=$(workspaces.source.path)/$(params.CONTEXT) # The user does not need to care the workspace and the source.
+                      - --destination=$(params.IMAGE)
+                      - --digest-file=$(results.IMAGE_DIGEST.path)
+                    # kaniko assumes it is running as root, which means this example fails on platforms
+                    # that default to run containers as random uid (like OpenShift). Adding this securityContext
+                    # makes it explicit that it needs to run as root.
+                    securityContext:
+                      runAsUser: 0
+                  - name: write-url
+                    image: docker.io/library/bash:5.1.4@sha256:c523c636b722339f41b6a431b44588ab2f762c5de5ec3bd7964420ff982fb1d9
+                    script: |
+                      set -e
+                      image="$(params.IMAGE)"
+                      echo -n "${image}" | tee "$(results.IMAGE_URL.path)"
+
+    - name: kanikoCustomBuildAndPushTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Task
+              metadata:
+                name: kaniko-custom-build-and-push
+                namespace: tekton-workspace
+              spec:
+                params:
+                  - name: pathToDockerFile
+                    type: string
+                    description: The path to the dockerfile to build
+                    default: $(resources.inputs.docker-source.path)/Dockerfile
+                  - name: pathToContext
+                    type: string
+                    description: |
+                      The build context used by Kaniko
+                      (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts)
+                    default: $(resources.inputs.docker-source.path)
+                resources:
+                  inputs:
+                    - name: docker-source
+                      type: git
+                  outputs:
+                    - name: builtImage
+                      type: image
+                steps:
+                  - name: build-and-push
+                    image: gcr.io/kaniko-project/executor:v0.17.1
+                    # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+                    env:
+                      - name: "DOCKER_CONFIG"
+                        value: "/tekton/home/.docker/"
+                    command:
+                      - /kaniko/executor
+                    args:
+                      - --dockerfile=$(params.pathToDockerFile)
+                      - --destination=$(resources.outputs.builtImage.url)
+                      - --context=$(params.pathToContext)
+
+    - name: kNativeTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Task
+              metadata:
+                name: kn
+                namespace: tekton-workspace
+                labels:
+                  app.kubernetes.io/version: "0.2"
+                annotations:
+                  tekton.dev/displayName: "kn"
+                  tekton.dev/pipelines.minVersion: "0.12.1"
+                  tekton.dev/categories: CLI
+                  tekton.dev/tags: cli
+                  tekton.dev/platforms: "linux/amd64,linux/s390x,linux/ppc64le,linux/arm64"
+              spec:
+                description: >-
+                  This Task performs operations on Knative resources
+                  (services, revisions, routes) using kn CLI
+
+                params:
+                  - name: kn-image
+                    description: kn CLI container image to run this task
+                    default: gcr.io/knative-releases/knative.dev/client/cmd/kn:latest
+                  - name: ARGS
+                    type: array
+                    description: kn CLI arguments to run
+                    default:
+                      - "help"
+                steps:
+                  - name: kn
+                    env:
+                      - name: HOME
+                        value: /tekton/home
+                    image: "$(params.kn-image)"
+                    command: ["/ko-app/kn"]
+                    args: ["$(params.ARGS)"]
+                    securityContext:
+                      runAsNonRoot: true
+                      runAsUser: 65532
+
+      # https://github.com/redhat-scholars/tekton-tutorial/blob/master/workspaces/list-directory-task.yaml
+    - name: listDirectoryTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Task
+              metadata:
+                name: list-directory
+                namespace: tekton-workspace
+              spec:
+                description: >-
+                  Simple directory lister
+                params:
+                  - name: sub-dirs
+                    type: array
+                    description: the sub-directories under workspace
+                    default: ["."]
+                workspaces:
+                  - name: directory
+                results:
+                  - name: README
+                    description: echo the README of the repo
+                steps:
+                  - name: list-directory
+                    image: busybox
+                    command:
+                      - ls
+                    args:
+                      - -ltr
+                      - "$(params.sub-dirs)"
+                    workingDir: "$(workspaces.directory.path)"
+                  - name: show-readme
+                    image: busybox
+                    script: |
+                      #!/bin/sh
+                      [[ -f $(workspaces.directory.path)/README.md ]] && cat $(workspaces.directory.path)/README.md | tee /tekton/results/README && exit 0
+                      [[ -f $(workspaces.directory.path)/README.adoc ]] && cat $(workspaces.directory.path)/README.adoc | tee /tekton/results/README && exit 0
+
+    - name: mavenTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Task
+              metadata:
+                name: maven
+                namespace: tekton-workspace
+                labels:
+                  app.kubernetes.io/version: "0.3"
+                annotations:
+                  tekton.dev/pipelines.minVersion: "0.17.0"
+                  tekton.dev/categories: Build Tools
+                  tekton.dev/tags: build-tool
+                  tekton.dev/platforms: "linux/amd64,linux/s390x,linux/ppc64le"
+              spec:
+                description: >-
+                  This Task can be used to run a Maven build. It uses a workspace to store m2 local repo.
+
+                workspaces:
+                  - name: source
+                    description: The workspace consisting of maven project.
+                  - name: maven-settings
+                    description: >-
+                      The workspace consisting of the custom maven settings
+                      provided by the user.
+                  - name: maven-local-repo
+                    description: Local repo (m2) workspace
+                    optional: true
+                params:
+                  - name: MAVEN_IMAGE
+                    type: string
+                    description: Maven base image
+                    default: gcr.io/cloud-builders/mvn@sha256:57523fc43394d6d9d2414ee8d1c85ed7a13460cbb268c3cd16d28cfb3859e641 #tag: latest
+                  - name: GOALS
+                    description: maven goals to run
+                    type: array
+                    default:
+                      - "package"
+                  - name: MAVEN_MIRROR_URL
+                    description: The Maven repository mirror url
+                    type: string
+                    default: ""
+                  - name: SERVER_USER
+                    description: The username for the server
+                    type: string
+                    default: ""
+                  - name: SERVER_PASSWORD
+                    description: The password for the server
+                    type: string
+                    default: ""
+                  - name: PROXY_USER
+                    description: The username for the proxy server
+                    type: string
+                    default: ""
+                  - name: PROXY_PASSWORD
+                    description: The password for the proxy server
+                    type: string
+                    default: ""
+                  - name: PROXY_PORT
+                    description: Port number for the proxy server
+                    type: string
+                    default: ""
+                  - name: PROXY_HOST
+                    description: Proxy server Host
+                    type: string
+                    default: ""
+                  - name: PROXY_NON_PROXY_HOSTS
+                    description: Non proxy server host
+                    type: string
+                    default: ""
+                  - name: PROXY_PROTOCOL
+                    description: Protocol for the proxy ie http or https
+                    type: string
+                    default: "http"
+                  - name: CONTEXT_DIR
+                    type: string
+                    description: >-
+                      The context directory within the repository for sources on
+                      which we want to execute maven goals.
+                    default: "."
+                steps:
+                  - name: mvn-settings
+                    image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
+                    script: |
+                      #!/usr/bin/env bash
+
+                      [[ -f $(workspaces.maven-settings.path)/settings.xml ]] && \
+                      echo "using existing $(workspaces.maven-settings.path)/settings.xml" && exit 0
+
+                      cat > "$(workspaces.maven-settings.path)/settings.xml" <<EOF
+                      <settings>
+                        <servers>
+                          <!-- The servers added here are generated from environment variables. Don't change. -->
+                          <!-- ### SERVER's USER INFO from ENV ### -->
+                        </servers>
+                        <mirrors>
+                          <!-- The mirrors added here are generated from environment variables. Don't change. -->
+                          <!-- ### mirrors from ENV ### -->
+                        </mirrors>
+                        <proxies>
+                          <!-- The proxies added here are generated from environment variables. Don't change. -->
+                          <!-- ### HTTP proxy from ENV ### -->
+                        </proxies>
+                      </settings>
+                      EOF
+
+                      xml=""
+                      if [ -n "$(params.PROXY_HOST)" ] && [ -n "$(params.PROXY_PORT)" ]; then
+                        xml="<proxy>\
+                          <id>genproxy</id>\
+                          <active>true</active>\
+                          <protocol>$(params.PROXY_PROTOCOL)</protocol>\
+                          <host>$(params.PROXY_HOST)</host>\
+                          <port>$(params.PROXY_PORT)</port>"
+                        if [ -n "$(params.PROXY_USER)" ] && [ -n "$(params.PROXY_PASSWORD)" ]; then
+                          xml="$xml\
+                              <username>$(params.PROXY_USER)</username>\
+                              <password>$(params.PROXY_PASSWORD)</password>"
+                        fi
+                        if [ -n "$(params.PROXY_NON_PROXY_HOSTS)" ]; then
+                          xml="$xml\
+                              <nonProxyHosts>$(params.PROXY_NON_PROXY_HOSTS)</nonProxyHosts>"
+                        fi
+                        xml="$xml\
+                            </proxy>"
+                        sed -i "s|<!-- ### HTTP proxy from ENV ### -->|$xml|" "$(workspaces.maven-settings.path)/settings.xml"
+                      fi
+
+                      if [ -n "$(params.SERVER_USER)" ] && [ -n "$(params.SERVER_PASSWORD)" ]; then
+                        xml="<server>\
+                          <id>serverid</id>"
+                        xml="$xml\
+                              <username>$(params.SERVER_USER)</username>\
+                              <password>$(params.SERVER_PASSWORD)</password>"
+                        xml="$xml\
+                            </server>"
+                        sed -i "s|<!-- ### SERVER's USER INFO from ENV ### -->|$xml|" "$(workspaces.maven-settings.path)/settings.xml"
+                      fi
+
+                      if [ -n "$(params.MAVEN_MIRROR_URL)" ]; then
+                        xml="    <mirror>\
+                          <id>mirror.default</id>\
+                          <url>$(params.MAVEN_MIRROR_URL)</url>\
+                          <mirrorOf>central</mirrorOf>\
+                        </mirror>"
+                        sed -i "s|<!-- ### mirrors from ENV ### -->|$xml|" "$(workspaces.maven-settings.path)/settings.xml"
+                      fi
+
+                  - name: mvn-goals
+                    image: $(params.MAVEN_IMAGE)
+                    workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
+                    command: ["/usr/bin/mvn"]
+                    args:
+                      - -s
+                      - $(workspaces.maven-settings.path)/settings.xml
+                      - "$(params.GOALS)"
+                      - "-Dmaven.repo.local=$(workspaces.maven-local-repo.path)/.m2"
+
+    - name: golangBuildTektonTask
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Task
+              metadata:
+                name: golang-build
+                namespace: tekton-workspace
+                labels:
+                  app.kubernetes.io/version: "0.3"
+                annotations:
+                  tekton.dev/pipelines.minVersion: "0.12.1"
+                  tekton.dev/categories: Build Tools
+                  tekton.dev/tags: build-tool
+                  tekton.dev/displayName: "golang build"
+                  tekton.dev/platforms: "linux/amd64,linux/s390x,linux/ppc64le"
+              spec:
+                description: >-
+                  This Task is Golang task to build Go projects.
+
+                params:
+                  - name: package
+                    description: base package to build in
+                  - name: packages
+                    description: "packages to build (default: ./cmd/...)"
+                    default: "./cmd/..."
+                  - name: version
+                    description: golang version to use for builds
+                    default: "latest"
+                  - name: flags
+                    description: flags to use for the test command
+                    default: -v
+                  - name: GOOS
+                    description: "running program's operating system target"
+                    default: linux
+                  - name: GOARCH
+                    description: "running program's architecture target"
+                    default: amd64
+                  - name: GO111MODULE
+                    description: "value of module support"
+                    default: auto
+                  - name: GOCACHE
+                    description: "Go caching directory path"
+                    default: ""
+                  - name: GOMODCACHE
+                    description: "Go mod caching directory path"
+                    default: ""
+                  - name: CGO_ENABLED
+                    description: "Toggle cgo tool during Go build. Use value '0' to disable cgo (for static builds)."
+                    default: ""
+                  - name: GOSUMDB
+                    description: "Go checksum database url. Use value 'off' to disable checksum validation."
+                    default: ""
+                workspaces:
+                  - name: source
+                steps:
+                  - name: build
+                    image: docker.io/library/golang:$(params.version)
+                    workingDir: $(workspaces.source.path)
+                    script: |
+                      if [ ! -e $GOPATH/src/$(params.package)/go.mod ];then
+                        SRC_PATH="$GOPATH/src/$(params.package)"
+                        mkdir -p $SRC_PATH
+                        cp -R "$(workspaces.source.path)"/* $SRC_PATH
+                        cd $SRC_PATH
+                      fi
+                      go build $(params.flags) $(params.packages)
+                    env:
+                      - name: GOOS
+                        value: "$(params.GOOS)"
+                      - name: GOARCH
+                        value: "$(params.GOARCH)"
+                      - name: GO111MODULE
+                        value: "$(params.GO111MODULE)"
+                      - name: GOCACHE
+                        value: "$(params.GOCACHE)"
+                      - name: GOMODCACHE
+                        value: "$(params.GOMODCACHE)"
+                      - name: CGO_ENABLED
+                        value: "$(params.CGO_ENABLED)"
+                      - name: GOSUMDB
+                        value: "$(params.GOSUMDB)"
+
+    # *********************TEKTON RESOURCES***********************************
+
+    - name: mavenSettingsConfigmap
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: tekton-maven-settings
+                namespace: tekton-workspace
+              data:
+                settings.xml: |-
+                  <?xml version="1.0" encoding="UTF-8"?>
+                  <settings xmlns="http://maven.apache.org/SETTINGS/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd">
+                    <servers>
+                      <server>
+                        <id>nexus-snapshots</id>
+                        <username>admin</username>
+                        <password>admin</password>
+                      </server>
+                      <server>
+                        <id>nexus-releases</id>
+                        <username>admin</username>
+                        <password>admin</password>
+                      </server>
+                    </servers>
+                    <mirrors>
+                      <mirror>
+                        <id>nexus</id>
+                        <mirrorOf>*</mirrorOf>
+                        <url>http://nexus-service.nexus:8081/nexus/repository/maven-public/</url>
+                      </mirror>
+                    </mirrors>
+                    <profiles>
+                      <profile>
+                        <id>nexus</id>
+                        <properties>
+                          <altSnapshotDeploymentRepository>snapshots::default::http://nexus-service.nexus:8081/nexus/repository/maven-snapshots/</altSnapshotDeploymentRepository>
+                          <altReleaseDeploymentRepository>releases::default::http://nexus-service.nexus:8081/nexus/repository/maven-releases/</altReleaseDeploymentRepository>
+                        </properties>
+                      </profile>
+                    </profiles>
+
+                    <activeProfiles>
+                      <activeProfile>nexus</activeProfile>
+                    </activeProfiles>
+                  </settings>
+
+    - name: dockerconfigGitlabSecret
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: bitnami.com/v1alpha1
+              kind: SealedSecret
+              metadata:
+                creationTimestamp: null
+                name: dockerconfig-gitlab-secret
+                # corresponds to registries-secret
+                namespace: tekton-workspace
+              spec:
+                encryptedData:
+                  config.json: AgBpvuiauPBU8+otzc8qGGbl+lnSTTPMlMTWicbf+ltiPOAvX3oqhOajBKYL2gkj5il9pn9CkqlZkP82vaIchYzO4C7NntAg3DxqvCBVYToU+jq8KSBW7Sr/wXJ/CsSjAARzRAb3X+gLzm1kFgeopTXhWUbhXNzl0B885kfqJWOk2w+YH7sgl0wFAJBRhgi/id1wQYG4dg2LeicR8FUPTeBM8q7VKcnSTGAAbAjUCitdCQYPXC+5uLFStgFYjddLYGJcNHc0S/PdPPwqS3Gky4abBBRl5J7qCFkFOAOLPH9miuq6CUeJPaqfKhkOKI/gbTfJI2Jpy0pd9u+zM7kmYonyOvSQuzv+fcS1qotLEx+aqSNKlmIEsjETEP3gQBnGXw24ozj1qFO5tlsoW9IDd4IuM/93Z7JK6z5fIkNqgw9LRSlreREDmZNtZfLt0bKKuH8JsDeEwqQlkursdDXmg+F0vxOikjVYYTay+sQkvWKCqLHwnRPTuffFxZ5PNXV2H2KlyYxpqJJhM0edEzoezUFNnBIhVAs63fYHb++yFUt9EJsdj2OEGt4LjX356c1aTsCpgIAOIHwEw7ToURo5oglhQYXQjMXNRdXAxbLKQtEddUV35/yuFwP7awYsEAV86cDIJKqu6uTNHQhPD+R/UyrnGkZM1QIG3AaVH9sUiIcwcCcipXaJyM4N2r1HuXQF5VQ4UhQm/FNx6Y5fz3rBwmroSUeWRoSSxtbSSrVDpikh6aY3ze5xk8NY/J5/4njXK12c2hOrOJdFy8+mA072NOUG3wDM1OlHT/yNpE/+owdwc2YCLdohp59Ywllkn1VoEkXNMLBqeu0cV5aZoSsQ1+9AxMEfxSVIGIYWTps1f+3d4fySNmw/sSm8lLPpmzJxZSbrx75pLR1kKv3i11vXXYyON+SfKYrUNEykNlZ5nDXnUhx1RgLSnnMIoB3XUDwTRY5yG3VvPO2raS2OW4FMvvTtc2l1RTqR0YcxBnvrglYoYrLcLypBpp22c+gmZzoa6RHC7it6LtqoHa5dgC7doYrzGwEcBbw5Tv9wMWBRSeVvInKUtlqZgh/UpEr98RIa4B00UHo0ompxVQvmxpAuT55idTa6QLdTI801bUbhoLeZ2c16PG54vNkw+OystFo9sw==
+                template:
+                  metadata:
+                    creationTimestamp: null
+                    name: dockerconfig-gitlab-secret
+                    namespace: tekton-workspace
+
+    - name: gitlabSshKey
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: bitnami.com/v1alpha1
+              kind: SealedSecret
+              metadata:
+                creationTimestamp: null
+                name: gitlab-ssh-key
+                namespace: tekton-workspace
+              spec:
+                encryptedData:
+                  known_hosts: AgC9AgPZCfKXT49hSSRxWPx14et+ZwDbyPG4FG2ELQxH1iEp3U46v8m5fklT32KxjRYqEXeuhEA3I/UwH4xwzptrGFereXCa/USuVU8zMl/AMl4WSGREF0aaH0SVqtlrCedhcDANvOdpz/mOsTT105hLi2Z6oeMeyd/D9vYaKOJoieCJMGifK1td8jQfCoMOOuP2h/zqPkU/pAUhhvBCH7YXtPl5hRsRl/msv79MFFaOXVLutiFsQdnJDlzZXvWtFzGODnPACmbuQa6cW6fAVGeTLGfSbU1pDYAcYgdGhyzjmk2EvEDCMDklzl4C22mBtBWUw0bEVh5mgwpwn1FIFPt95E3B0thp8C9vcMymNKTJbmh0l+UAyOHyOCXaVeLe10ex/7XeesDTIlDf7PaxPcWZxb7+BjUnN9tfs+dgq/kPlXRV4SrmIxlOLzeYrsEtXPrgRF1AgrGbBuiKEX8OcUlFS8QwrNnKUbD6Fuu5D2NY9lnKr1qhrANF886xlN/AnwelMasMHimwrrOUyME3/uzl18NDnxwHnVp8RyfIZusIUCQWXZqjQ/ToO71tUSMr57u4Lm6E38i19g7am4b5/pzKK15mt0CCH1OPi8YKVGoE5yJhqf56v8cuDzOURDNQkeXwPmtM2yReEMQ5M5H20eVH9YlfqXE4V1+kxa2fylUlWzDcXbK0ePbSj1lXQFPYP0LYJifSohFMFkbl8gXE+8PQipAJnrvPf7tP1kuzK4fu1Yq+9Kz2mnVImabLaoeJa0PLsZSAQAixXCpm29KwepgN1SC2v/XkEnJJRe5e3S5Q/HjoZ4ebMtW9Dt1BBA86LC7j9m32LLusiQyEZVCpz9qfq2c7/8CY1NANL0nsAax1/OnW6FNYst138/2nGcfGzKAfSf0uddJ/AwtEG2LRkNgJWfFBL7p6aYi8Ue3VG8AfcmRQh8JtINcBdnjUq4MvGl9nzJoCtGBEcu1dvhErbdzRT44/HFzo3YWMYmcOAnO/ig4DSWJQT6uoZBdpBvi4Hco/Uw7UtLRqZQ1qaxK4JOEE/v4JNNHLSRHFrNlz8SjlNsfMLtAxXC63H9m3ziVfRotIkl3odjtwsh9IbEBFu7MaOde4gLa19KECDb9PIWUeT4zoMKbTcts/WCq6GvdaIjfjs1aFPgDet9IQ3XzgTmm0x6YEwx93vpUETwROY59zNbrT1EKQtFVE8h2MVn82bCirOjni0sE1A1keVsuaHNsG9UubtI/Lf4+9ETOY7HEJrLju/fWygjoP8wfKrSKmrGyYYCAlpvwzYDKxnurHKX5QgtobK2lzFTRudkIxFYIsLjoN/QrXOckh99vHwHWae0lkn1nT/YmrdoExhJdBTYpK/hG5E6CmEdMJuX4uRmQ6YUtWbC997tE5RItVuueiaZGy+CniUW37caJXLZoa0gny8bu40y286Syn89wqRaXD/cWtPbbr15N5l9lsNynz5bKu5DMUFO8A9cXMBue0FECvhKdNopOinWfNcH3ACiau1laTJNJn/mLEYs3CIJjCmmMC89455QntuqkXjw6WniqgQXp5+iRPvdnb+jzOJXoooic1wX/9bRWJ5pe9/LgLEpULdSwsodFDQXULKDOGlMccEQyPvD/rMh7YqYi5uUv0vkph7nyiVnhCTnfu8WJRtxDrZEdTirrqtmBPobUTJjoWEeJ27S/aCKPUhQX5gXtI4pg3l8PkAg5mJvEhzKRdyl7UUleiQZR894HDa9TUJteTd97spt8t8MWq+LFuHmT9GvqTRFS+K4KB78/rayAx4vKAUdBHVxTPijveH4dIfXITX5xOYRDBxy9dDWrPr4vl+OCiqdxRusJ/2XRpa/gFyNNEY+cv4g3/m/UbZABppB2lRgDlqJvwez3rZUw015wUxbBKcQaOEzF5vuxtHaP8g3RD34FBcQhKj8Y/NQ3YomYfRa+96Hk9IRPUtCJI81fWThdtwVeui90BrWM7RJ5Zf7uUWf430B2D0sr64SD5gXwZSsRvaIAwLavD3I4EAg08WUhs7lz+3H4CGx+zdWlbupSVj7QrlNLzGKzHgpHGMGq9pFZidpwkKah9QsdmrC9cvQLuzrNv6Rpwq1IR0L/Ks3xXkYjemBioQibK4dEXHICMoU0gvZLozGfruDz1VhCv0dQgbuMFCuuzGpzVu/zwzLzDmuiItII=
+                  ssh-privatekey: AgB2SHTji6u8uFnywb/3cQuuyVUdDYKQhkEHTqoPUFGtjq4B9eU0k2crE/xOI0Wxoxv3C0hdxYYvO/xeU83TZOeJKG93txwIVWnk3nkhgT2VFgcO6IhGwToqNpRYU/5F2TLtPoL3JPHNiIhsugVvCGGn9LeubQCAegKWfRgXQ7ynuIXYRQ36wu6Ayy8SAJVrLrDiFFVr08xqxBgmauF1BkE/+UoAPbOs08cX90AEgntFVTs9Tav6cD0cTJojPGcDNkfD61UYq1sDIjHO8J6svGP40M7BVq573HLqBF85E1ltV/tDCxEgyzC+rcmbt+DX6mWR8/vwXdtgoGYbWKeWheR9RC55KrYjgncX+zQwKpw0x09FLBj7y0kUp6gd2o9V4A0qYUSnQVSJYBk+c6uU18tFVmIXLXDhDpigwr42iAF16c9UK5Al3mS7nuA9GIvDNyGQFWL3zBAb+6Hrkg82yZQzW7cZ3XiE5FK2np1Hh4a2OTn2nFHp39YJ3sEUANpxvfa0YjII08ORaRI4SET9IqvoeFKu7gIRnYfkC5NSkVtJ1EgZ9pufc+wFmvE4OPm5WLo/eHBOx8kLfujHXXAsZ/DbptSrQMbN/GvXoR+quZqnXYdYfdrq4ZROIAg+yEI19d16m1FF2YdHxDdkgfFR6legNXwHuhASx1EUuN2VQHIy23MH/DsEEjRPsTpnBx+j8XP6E3Lq3Dz8liMT1N20RYMfrGsrOLRC1LjerEmSQSIjU9uP3Zov4s5yq2XcqL5z2BoxwMfgvVog4XdY27tisCMs9TY5qgLncD0K3Hu2L5mn/XpNC1g4NMv2006xhlfkTcMLJU4B6X2VQ7wpCX974/JVWVXoGqKu1dnKGdO3Ljc8hq3dMyy1v7DoSTG52XkL9PZUjKW3gS1Mdc9SqS4igfYLAgclgo9x26rFsKghFk/DgH5c7tGBZGXwUQHFPGLnd8IZVqkqwkbpEvjO5EJbFygzGIVeDL+serPj0/DPorMEurj+J7oryT99VA2fUU2X82LvGpLkp+w829NEh9wsNACZkGbPijNGVqkP5Ue3tGtoDJP0c/SUAQBAxtVKUEmEfUy84c5t702NfzGcl0KPeBhrHoSis/tdpVS9RucEdgnbfB2gC5uEGK0NB5+Pm4bJfVmvM6Z+35DNyV6ws4mQbBbEZJwN4L3gRkAJoAQWoiesj45tAGykKUq/V5AMuBWmTPce9l0Zopy62RxZkrNXrgp1+h4S+X7+CtY0jE2CW3B2uUTwe3f0LXremDDsUlmoylQ7LCQsc5MM49FeY6ZpWAHfDOoU1OK4OeUBYHBVhPxBAVYsiEIxFzGP2VPW+AjrkyhNOamX3BOTnz5wvhJsS+X/HnNDlrmpiBOgWXnwi4ropK0Ly95uqljsu4BOToWLg4Ze6w2hUh/44z9HNNQFTjbK+TaVXBQ5bxH/14NU7rGpqKxIRm5aTgrNSpqiolO1ZgBbwRYw1LSQ8chcgDDi1qiL9BsSGuusMxBSYfuDFRQHuvEiOxqVdqLTzOQ9R3xi94NNmym0nqkgJAJwb8MvycnGQVAsLN0tnh3SSRIKXJTVdbLXPmFYp+9Tpzozh+b+gDnpngqEBIkiu4tDuhJaX1vL90c2sJkeHJmznsxGb0W0i18Wx6ojUNQMhRa4q9JRn1daIGEv0O7CvdVgyrWA0MGm7lQn2t4m05Riv4lt2rCBODvezwHWLlWaMsbSBi+yAruEf6kZ8Sfvd5nSaHhdKUu6OacRc0YGPUb0Fxz+LHQxaWGq9Zu0dPbydmyfK4oedxfBpH1sxk1KKNSaYdxAzFzChy2MxpnqYaGC6dLHeq3skv2WObsYY3MqMMi7IvoI4zH+GTC9QXs3N437dcBsftWatuYj44ydQRq7F9EG/uQuivA5zgHaLWIApt6H/MJxBXjqmd7wWrHjSk4NGnFAvhBLGCBRlhzOimp9Ad3NNL/fCTEilPtLYJEgQNzlZu5Z3/LccOX3m7g43nuuoLoiqbB8ioRTnXIbaKZMeB4xMMMHpjl421qYWXXEQ1LX+QtE1O4fYpjln/V2pq3Q2Ze4bLTA2YxSvmjaT7Kd4yv2UXmG6ozT8ibQD4fHcHNaSuvPcU3qDlzB0jEP6xFWsoH+0ooa4X+nC/uk4kapfiStrE0jDwNWhd9KKVhqK/jl/bEh3Q94ruZLkLn+0eaBbEyINNx/ksQkscB3RQh2Shv5qf/cB9dkBMcLOhgGLE2K71dHGTaXYFqsL3wMzDOpbgq4uk1wKeVgIVnsTqmlOGn8PVrRiUQGimJbJtitqGE7d7nKpDRnyLLXThImph9DD2J06LjXWAciOVpO+XWOGFvr3l/xySUJ5p03xd59h1vTXMS0QpiLenIII9Q5YEzLV6x+4tTDaZti9BTR2FIWTzYcie3XSTFzV/zluBK3EpM1hbrHCfjXQfJ508FAH+4uo6JMLxE/g5XOVVLQpnQcKk01H7sfbHAeLFH/DQ4EjkXhDAR8VJWF3o/etHecAYA8DZ2N5wMjW/xrWgdHxfD73Q78louo6xSGUkmUyf/QumYVSyAmOch5zrohD9XI3jyxvt5vR3JkMZULZF7G8Q/B2THDPVSZRiRWynIQPDoE2ZHF67jH1NIY/YPBXh5yHN1B0qvLIYoRBPsKIIeoV5AeAZUjVTnkPnUAS44DsByw14el6swGsKLir2fsS0qiezMX3HuLeOAkHWYzg6enh1kiZ/e0qmN6RXkotKYx3efbV0fulQZ+5+q2Ul9eH+mjLgGqQnn3ytuy7+j9IO49yaj/ykPIAOc0ziuIo3hjIYa142tnTnisKS1c26HHO19EN73rXStcaqoEsMX1aZfmYCNq5vvSNCu8mM2b+uaL3gfLOAnmBmRgnTjTgzVLhlGmNVkllZUzLlASQfG7MtPpBPJqs9/JP1sU1ItOCRN336K8NpNOqYB8wgsemGNUtS2duANe0ErMEOtTcwsGEvTPFAyarJdEXtzRRvSbI/+FHQI63b3a0231FKX/yQEF9bRzXKITx5BrJDUw6iXrgeNGpAjORxTTvLhZKM3TBzVGpKx6X3RKjeBxWgSJ6HJnp0j5mILdFlEvEvUlTPe0Ym1uP+lt3mgJ1U8KXOl+2yBk5LFxWsl4ieJgr1ZRfAsvn4ipKOBbSwZdV0VJgy+BuNte3tpGQ8f4iGGnnB/clyNWPlagj02+y6FBDUGzdjOgDqn/nf0AyEf89OzWMUd4F1tCJjxBvnnkggB6lAeIw9ldZ96cHhfETdHfZU24/cSZeu5y/61TvaZ9iVIJ8OGDPuS0vC0Ice3C2TI/TAfeAN4EHN8mG4cjpYlqIQQ7/gZiL6BdKM1E7V/ic1EAseLNzIDK9FH6gzGYsW3R5Kuyq29h4X583qtznDaxcfLt8Pd1tI8oRLvbwiBa0z76DiIdzirk3JXBiVq4GUh5Y8tEeK6Ihorp3mw44hof7Z63y0jQWSza28/OEJi3O9gMFXj6veUgkYCwLrN9elyGHnlsaGcueDm5TP6aZ/GbsrY4e0XQI9i7iJ7O+PeO+VGKt8v4CJ3ozicdhA5ZzgCPIu6189lxmuKdYTUKxySUVIPRbJfUmnIcJ6Hnfs72+V+tvDibl39EsI3kQm6iExwdsr/xGeXLWuIfY8R1jy3KnyjII1kxsLPjJVhAoJ+bqXg/CIrYBIJzIqIbWZfgGRCGkNrsWeoHHRWSoNh5J3XkPYDzuOJ592ZmvlxBOgSh7TFVjz++sfAoPaM3wQhhcgk0xgkoioGaqggY687Ii2bBqe2AibSEDfHqgYwaAlZx6245JBObc3JgEsCOUIv5YR1BcDaVTpYnfKHPXOApYVaCPCac5cHM9ZKkqMOnK0WoS63/zoLAFn0J/wy5QL6xNc55LR9n5kYRJlFZGoOg4xB7SDGQIMqrRVmiQybpi6cwNATkveCKgXveZFJF9PnS9H97SxkwdIxn49Buu5Rr5vFVqwmjMX73OPwCkZEM9ig8EGxVHlOaPdh9qp1IFo2TOX1RwSJMN+nCHoeGK/O8sMN0diL39C6SdrvY+vOdDA14OdIQWTWGWLA/t7aZ7RtgX0YWsqu6UQv30x+losj5A9vb5VfvtvL18cnZFIzz6zx9D1qMMcCpDAqFFUe6lbTMWca61mfTPAAhWek/6NcHIooOgng3wjpf8DcHjN725irRnjHuoZ8+kS2jZG1jffyTzk8RsuDE50R6ZtfA54JLKPL4ZMgh6B/ZdqfsQtK1+3tIkYjCWx8Y1zs9DAkndXC50LbAPYkJgyCWwD4RJejnE5gctmBKZBclJrGmsp6yCgDqgbhABy2X/6ZiMZ9VhECWPzsrBt+gWZj5HCcElqTsEEQ0/8m+WQVtSY0N5zYTdBln3txr+6fQD0q/r2RYeDO3zvf/O+p+LGQ27465knlsZmW+UWdL1cMWkp05hNWp+aZEBX+9+vLVaXSU2Ns0B+t1mdDAnc714nYsmGXr9b1DfoGUzOyDogfOPQh1bhghGuPxQV5AJgfh1jSmn5ZtVbc1VltXN2W89SAZArHHI4bg3HtU/jZSebQurGTrCcGEDbvXDF6zC3H2zyhmO24bEYaxJbUZrhK5xSABaCrbuLRhUkut/edrAlZtdSp7zPehogm485+l7ruUaEj/mBZMSPouKifxTNTclTlE5Hd68DEhjECCMILHfNIJACqJuvA1M/jhzoVJPSrF2+7IbFJOVdDY3cftNDWjHYlCUsWQsDfotqOv1RPO5Qxepo6Fb2inTnek3e+wMg8y5JdX/dhL1Sb6ayV5ekOrEEyxaSq5tLaD78WUD3HDyjA0jlLz+dLOrqTGBMcCdWZGbKmZFeKs4lwkEhES8I75j12JJVoEoLGv7bFIcrEB79xsLR5dLe17/0QzMp9YMIpb8aMnKytqKoLyMhC9c5Zt9GE0JfffzFyuXmw+Zgf4MW+xz15dQnZpknqQgHzNPJQqipw191BroRMu67+snHJfOVgJ6nnsMfyozpSNW7vg9411YfgYjVPwAz7EiwmNKUBYk4M7i1tnvohthosAsmD4I7kFl62wvj+eWywF8qg4mFS8mnAB8qlFpbMqV6eUb85I4a5I8z0F/gP2OH+8viZ9xBIia1LGCR+n3yY17zmnDnaqfLmKWwB6vlO4dw8TXzvoyqKFNkaIMfP4nAgHa8K+fHIUmCoTpPAApSq/m+buRYV4s6XyChdnVME5AwKXybeN0wcEVcd+CazE7g==
+                template:
+                  metadata:
+                    annotations:
+                      tekton.dev/git-0: gitlab.com
+                    creationTimestamp: null
+                    name: gitlab-ssh-key
+                    namespace: tekton-workspace
+                  type: kubernetes.io/ssh-auth
+    - name: githubSshKey
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: bitnami.com/v1alpha1
+              kind: SealedSecret
+              metadata:
+                creationTimestamp: null
+                name: github-ssh-key
+                namespace: tekton-workspace
+              spec:
+                encryptedData:
+                  known_hosts: AgBID7v8FZvXl2mBq+ymkaBDIO/ZcIWQTN9G1lJE8lMU05dx2fdge+R6hJQkGVVpm/+RG7f3KlgZ69oLwtppS52wfo4bdNa48+h1A5gdj4kqlDpYbtaXhKL4mvD0DHUBiD9diQH7PpcDi58SH3KJ7TIdS6ERSYpLw8j0/M0BXrsHjP9bP0d5n6k6GvU5Abei+DNHpIcQ4aI4Bi8ueiPrmtf2SpSI2uGFNQadFb1ty6FrnndVQFfiF/YqRDMUweeb5wqMFZ09RM+Fm4B4jfMccKcsTEQinVshJky85Uv2xPT+SSBbc4bfHij0Mv0kjE6xl5Ms7gDOhbekA1NoHD5fhk7pYrxktBytbEC39AlSmRmhExgBkBtihUEqRgb9GyEFDZcH6jgtMNd0d0Oe6Sg8212KEdkeUDBTExxCOm34vvdi9ZDi2J5Wx1vP2uguq/OMc76kmmiwko/PA5ZpIwa9xRmNQvCq55PcxxS4qRCHTIb6yKEyMhO8kyQclYbgQigPfdSdUF95kFOpva7izd7G3ljDSva8jxnCPjGLs/zv6K5d3HQONzB/6rCn+FeuJDpwU3yeKbX8vpha+eQxmFSjKJ17G1/9p42ph1eYMf1NdLMmG9FYx6iIIPe6GkBVcv4v5pG7OTRfCXMyX/3qKje30QvfKO7uEPLEZtncOZPL/B/9gKv6KgCx7EuPWh30QBo6DMfYZAh2QsRnRmuUrTPyBQnyMBLrviC7limDg5BfSJQMycjV5+WHz/zAWRDwJrefRdHqQijuJk/uxfWFQxoPalCya8cmmonxUqrtqTZcG+zoQRY/Z3AG8WAxWH7KWoogyRazFrfll2zqwl5txeFkYsNIP6ht1V2KiHjXdCTXM9mky6ImtDUeZ8EB8vzITq8gK36gP86h4r54TSJYY+CL+tr5v6sSC2yr5w42ISAXZh4HGuF6SU4feOmozKCWyxo+RHGOamNw1+r/c2yzxkd+NRWOpZ82dQjQdgo3+DvcqLd+PNzo/tSx9ymPQO+30ZOU3foovVgAbFLYiTupj9CnNd1IM2lmJg2xsUZGNdJ27Bea1V35UOasqqaJ/k1l2Z4oub3whTeDUXWIVJMOiN7fvNoLCpfkchWSlVCskax1qn69zY0t32uczEHJhuMsW9ZNkaJfPW6pZqmAjXzrtr7pLEBGSOKEopTHp+1d5WgSVGR3J2ZRJ24HZttT9cO2NiLdHSpTyESFeAtl9QxE/p0vSJZtG4qkkxZw+nbBsdoqzTpIEHu04GdrmRiV4VuP94WATGO2zIlQr+0wnC1powqWk6XvWN6NNseSXrc+U5BNAtMeAAz13A5CYGCSDcCZDaVncb2MPqwO9GtVkngs4ow9v1eVUhvx9QqqijaAeWmhNexcP4wR7O9RrbfHd8QFvzo2MkUqae2FejDQuOkWrP+gtoNkv6w93oAd2MLUDSZ8K8bY1TNwaK9b1uHvV4FHgA51R1/cWB19ot4p/w+xlj/n7K5YNk4HoyFZr1bhUoTbOk4uTYUZQZ2BECJBcJzIcqynFhfm6txo8HAT8th6jfzgT/U9VqycXsEg7/h6cIV6QYRgID2oNMfqvCLSEoM52S27Ap040C3MjxS3XrQd5yYvoJCFVTe0zrElUx4Q+w8V49MmovMOUwYhusKO97eQLrxarRkzDsTJb9D07Z4mdPQDJQAAnRaUAqEJvX5g7o5x1+dQ1dxbsRSzA0K9DibmwabPTeTnG+N25/b+OCB8g47627yeeg+yJBGsnkugjRdGFCMLacuJ5QTbRr6Ic6tUXiWcQk1P/axP9vuLV9eayjE=
+                  ssh-privatekey: AgCn59LqEMrnC1XqKNSjcBQKhMQkztAEV94w6p7Ie8QMjQDwBtCkvs9MZLL7hgJIW/kDQGXCtTp4jnUWe8dNdK48cQKKAqzeZvWQgt6M+9Qk1JMJlqYT3+4TdGR0ZuvbRaHtUy7Nu7dAHXFb+hOAoNREUjmR56p5JwIdVfAfiA7AjeN+JJV344qLYPSL7uIjFeOjzwKIufb4jM1xDiddFK2xCall1g8a2SoZW6DZn6YLwxDZ1Yd9dxOHWHXkxblkdXiovW+iZqYr73rQrCcnvgy/6uHFpCLasngUeaQVTxrQhTJvQpt0HY1lyS+4OIkVN0qGsSkGUhIHAfClNVq2UNoLAi3zEvKfrCWn/a+aKsjaWoB4R6WFCEe8M/yKob2xw98IFUxOBIIqmV/LEwF55q3INH+/T4tjvJOhdoWiGEgw3SJfm40RHWdIrnkXCKR/C5+k6AmYDSz6QXdIWQlxbS8TVa3CIjZNLrDi9wtaDoGUqJf+2urJbirj+ZUygyazhPTVeGeH5L4UbTyFAG8lrHScEc5G/kuMmEAJfH/TIqXMMXWmAgQTdNCv/81+SXJMSGItLV5HrrJGESAUD2PTn4/Mf1W+iz/BooDShUZF8iZREY/4L2Fq61dCKewFEMDgT/qSwl/RF8cwqv8LnP2xpx6mibdolH5eVI7Tse2ezaGE0Hi83WnmtG6ztF+qDZs4Hc8YHtjcxOWYFmVuVv9JjimB3ED5d+ycIFrzhdDBE6zUm/eYQQJDWpnEnIQzMLqKXHZlFqwRMLPljNnVpQBwM3dtj1w2Bl6u86v88SguT5ZTRbh6Krj9Emw7F0jhWHziV++wJc1QZ5h8e86ymMEA4HXRX2xZWMV+VBCJ3dFOO00CnygcgLmxGb4yEiUSK6+fWj82psbp2vsHbSUr6eT439sHELSkKo9QjCLMNfL2nP7CQVVH9Uz7bRHieNnHC8d+MNQmUNvm2PErcMGqwnwWTw1dQOzHXwbpygou1hzgNAGPQHXuKKHBuyWN2Izala0MGCUV0Bvr3JzfGAFbu2S29pTMs2nphNQmuz865IpsViojWN0Vu8m86NQEZscS85Vnlmb0JEu1ymKFVFjCo9/7nVEjyhkDPZfVBgtHxSzrEUT2Qau6AatiOcJoRCLvvQ40GCX3KAHpdof+1YCN3c5ygc4a0QwYc4sshUDTHou6F3V8G9hpPEb5AzV5OV3Mm8rV6ZEo4SZ/8Ve37WyUuOs8j4r1Y5XRrXwOoaquwfWdBb28HhQUbw==
+                template:
+                  metadata:
+                    annotations:
+                      tekton.dev/git-0: github.com
+                    creationTimestamp: null
+                    name: github-ssh-key
+                    namespace: tekton-workspace
+                  type: kubernetes.io/ssh-auth
+    - name: gitlabCloneServiceAccount
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: ServiceAccount
+              metadata:
+                name: gitlab-clone-serviceaccount
+                namespace: tekton-workspace
+              secrets:
+                - name: gitlab-ssh-key
+
+    - name: githubCloneServiceAccount
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: ServiceAccount
+              metadata:
+                name: github-clone-serviceaccount
+                namespace: tekton-workspace
+              secrets:
+                - name: github-ssh-key
+
+    - name: coreMathsImageRegistryTektonPipelineResource
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1alpha1
+              kind: PipelineResource
+              metadata:
+                name: core-maths-image-registry
+                namespace: tekton-workspace
+              spec:
+                type: image
+                params:
+                  - name: imageUrl
+                    value: registry.gitlab.com/b5962/core-maths
+                  - name: imageTag
+                    value: v0.0.1-SNAPSHOT
+                  - name: revision
+                    value: develop
+
+    - name: coreMathsRepoGitTektonPipelineResource
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1alpha1
+              kind: PipelineResource
+              metadata:
+                name: core-maths-repo-git
+                namespace: tekton-workspace
+              spec:
+                type: git
+                params:
+                  - name: gitUrl
+                    value: git@gitlab.com:b5962/core-maths.git
+                  - name: branch-name
+                    value: develop
+
+    # *********************TEKTON PIPELINES***********************************
+    - name: gitCloneMavenJavaDockerBuildAndPushImageTektonPipeline
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: tekton.dev/v1beta1
+              kind: Pipeline
+              metadata:
+                name: git-clone-and-build-pipeline
+                namespace: tekton-workspace
+              spec:
+                workspaces:
+                  - name: git-source
+                    description: The git repo
+                  - name: maven-settings
+                  - name: dockerconfig
+                params:
+                  - name: gitUrl
+                    description: Git repository url
+                  - name: branch-name
+                    type: string
+                    description: The git branch to clone.
+                  - name: pathToContext
+                    description: The path to the build context, used by Kaniko - within the workspace
+                    default: src
+                  # - name: pathToYamlFile
+                  #   description: The path to the yaml file to deploy within the git source
+                  - name: imageUrl
+                    description: Image name including repository
+                  - name: imageTag
+                    description: Image tag
+                    default: "latest"
+                tasks:
+                  - name: clone-repo
+                    taskRef:
+                      name: git-clone
+                    workspaces:
+                      - name: output
+                        workspace: git-source
+                    params:
+                      - name: url
+                        value: "$(params.gitUrl)"
+                      - name: subdirectory
+                        value: ""
+                      - name: deleteExisting
+                        value: "true"
+                      - name: revision
+                        value: $(params.branch-name)
+                  - name: maven-deploy
+                    taskRef:
+                      name: maven
+                    runAfter:
+                      - clone-repo
+                    workspaces:
+                      - name: maven-settings
+                        workspace: maven-settings
+                      - name: source
+                        workspace: git-source
+                    params:
+                      # - name: MAVEN_MIRROR_URL
+                      #   value: http://nexus-service.nexus:8081/repository/maven-public/
+                      - name: MAVEN_IMAGE
+                        value: maven:3.9.1-eclipse-temurin-20-alpine
+                      - name: CONTEXT_DIR
+                        # if it is in the root value is ".", we cannot hardcorded it here, get it from the pipeline-run
+                        value: "./pokedex"
+                      - name: GOALS
+                        value:
+                          - -DskipTests
+                          - clean
+                          - deploy
+                  - name: build-and-push-image
+                    taskRef:
+                      name: kaniko
+                    runAfter:
+                      - maven-deploy
+                    workspaces:
+                      - name: source
+                        workspace: git-source
+                      - name: dockerconfig
+                        workspace: dockerconfig
+                    params:
+                      # - name: BUILDER_IMAGE
+                      #   value: gcr.io/kaniko-project/executor:debug
+                      # - name: BUILDER_IMAGE
+                      #   value: gcr.io/kaniko-project/executor:v1.9.2
+                      #   - name: BUILDER_IMAGE
+                      #   value: gcr.io/kaniko-project/executor:v1.9.2-debug
+                      - name: CONTEXT
+                        value: $(params.pathToContext)
+                      - name: IMAGE
+                        value: $(params.imageUrl):$(params.imageTag)
+
+    # *********************TEKTON RESULTS***********************************
+    - name: postgresTektonResults
+      base:
+        apiVersion: kubernetes.crossplane.io/v1alpha2
+        kind: Object
+        spec:
+          patches:
+            - fromFieldPath: "spec.label.tektonNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
+          providerConfigRef:
+            name: kubernetes-provider
+          forProvider:
+            manifest:
+              apiVersion: v1
+              kind: Secret
+              type: Opaque
+              metadata:
+                name: tekton-results-postgres
+                namespace: tekton-pipelines
+              data:
+                POSTGRES_USER: cG9zdGdyZXM=
+                POSTGRES_PASSWORD: cG9zdGdyZXM=

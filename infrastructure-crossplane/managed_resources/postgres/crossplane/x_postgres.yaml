@@ -20,7 +20,7 @@ spec:
               apiVersion: v1
               kind: Namespace
               metadata:
-                name: postgres                               
+                name: postgres
           providerConfigRef:
             name: kubernetes-provider
     - name: persistentVolumeBluePostgresPvVolume
@@ -28,6 +28,11 @@ spec:
         apiVersion: kubernetes.crossplane.io/v1alpha2
         kind: Object
         spec:
+          patches:
+            - fromFieldPath: "spec.label.postgresNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
           providerConfigRef:
             name: kubernetes-provider
           forProvider:
@@ -36,7 +41,7 @@ spec:
               apiVersion: v1
               metadata:
                 name: blue-postgres-pv-volume
-                namespace: "{{ .spec.namespace }}"  
+                namespace: postgres
                 labels:
                   type: local
                   app: blue-postgres
@@ -46,7 +51,7 @@ spec:
                   storage: 20Gi
                 accessModes:
                   - ReadWriteMany
-                persistentVolumeReclaimPolicy: Retain  
+                persistentVolumeReclaimPolicy: Retain
                 hostPath:
                   path: "/mnt/data/postgres-volume"
 
@@ -55,6 +60,11 @@ spec:
         apiVersion: kubernetes.crossplane.io/v1alpha2
         kind: Object
         spec:
+          patches:
+            - fromFieldPath: "spec.label.postgresNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
           providerConfigRef:
             name: kubernetes-provider
           forProvider:
@@ -63,7 +73,7 @@ spec:
               apiVersion: v1
               metadata:
                 name: blue-postgres-pv-claim
-                namespace: "{{ .spec.namespace }}"  
+                namespace: postgres
                 labels:
                   app: blue-postgres
               spec:
@@ -79,6 +89,11 @@ spec:
         apiVersion: kubernetes.crossplane.io/v1alpha2
         kind: Object
         spec:
+          patches:
+            - fromFieldPath: "spec.label.postgresNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
           providerConfigRef:
             name: kubernetes-provider
           forProvider:
@@ -87,19 +102,24 @@ spec:
               kind: ConfigMap
               metadata:
                 name: blue-postgres-config
-                namespace: "{{ .spec.namespace }}"  
+                namespace: postgres
                 labels:
                   app: blue-postgres
               data:
                 POSTGRES_DB: blue_postgres
                 POSTGRES_USER: postgres
-                POSTGRES_PASSWORD: postgres  
+                POSTGRES_PASSWORD: postgres
 
     - name: deploymentBluePostgres
       base:
         apiVersion: kubernetes.crossplane.io/v1alpha2
         kind: Object
         spec:
+          patches:
+            - fromFieldPath: "spec.label.postgresNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
           providerConfigRef:
             name: kubernetes-provider
           forProvider:
@@ -108,8 +128,8 @@ spec:
               kind: Deployment
               metadata:
                 name: blue-postgres
-                namespace: "{{ .spec.namespace }}" 
-                labels: 
+                namespace: postgres
+                labels:
                   app: blue-postgres
               spec:
                 replicas: 1
@@ -117,7 +137,7 @@ spec:
                   matchLabels:
                     app: blue-postgres
                 template:
-                  metadata:                    
+                  metadata:
                     labels:
                       app: blue-postgres
                   spec:
@@ -143,6 +163,11 @@ spec:
         apiVersion: kubernetes.crossplane.io/v1alpha2
         kind: Object
         spec:
+          patches:
+            - fromFieldPath: "spec.label.postgresNamespace"
+              toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+              policy:
+                fromFieldPath: "Required"
           providerConfigRef:
             name: kubernetes-provider
           forProvider:
@@ -151,7 +176,7 @@ spec:
               kind: Service
               metadata:
                 name: blue-postgres
-                namespace: "{{ .spec.namespace }}"  
+                namespace: postgres
                 labels:
                   app: blue-postgres
               spec:
@@ -159,5 +184,5 @@ spec:
                   app: blue-postgres
                 type: LoadBalancer
                 ports:
-                - port: 5432
-                  nodePort: 31543                       
+                  - port: 5432
+                    nodePort: 31543

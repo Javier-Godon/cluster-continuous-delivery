@@ -5,6 +5,9 @@ metadata:
   namespace: default
 spec:
   namespace: postgres
+  label:
+    postgresNamespace: postgres
+
   # resourceRef:
   #   apiVersion: gitops.bluesolution.es/v1alpha1
   #   kind: PostgresCompositeWorkload

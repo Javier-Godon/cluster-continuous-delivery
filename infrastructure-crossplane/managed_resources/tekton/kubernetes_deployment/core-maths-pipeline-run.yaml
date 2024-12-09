@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: core-maths-pipelinerun-
+  namespace: tekton-workspace
+spec:
+  pipelineRef:
+    name: git-clone-and-build-pipeline  
+  params:
+    - name: gitUrl
+      value: git@gitlab.com:b5962/core-maths.git 
+    - name: revision
+      value: develop
+    - name: branch-name
+      value: develop
+    - name: pathToContext
+      value: ./
+    - name: imageUrl
+      value: registry.gitlab.com/b5962/core-maths
+    - name: imageTag
+      value: v0.0.1-SNAPSHOT      
+  serviceAccountName: gitlab-clone-serviceaccount
+  workspaces:
+  - name: maven-settings
+    configMap:
+      name: tekton-maven-settings
+  - name: dockerconfig
+    secret:
+      secretName: dockerconfig-gitlab-secret    
+  - name: git-source
+    volumeClaimTemplate:
+      metadata:
+        name: core-maths-source-pvc
+        namespace: tekton-workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+    # - name: git-source
+    #   persistentVolumeClaim:
+    #     claimName: core-maths-source-pvc
+    

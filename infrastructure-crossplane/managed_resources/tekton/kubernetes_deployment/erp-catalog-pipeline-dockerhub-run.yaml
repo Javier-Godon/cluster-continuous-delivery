@@ -1,0 +1,45 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: erp-catalog-dockerhub-pipelinerun-
+  namespace: tekton-workspace
+spec:
+  pipelineRef:
+    name: git-clone-and-build-pipeline
+  params:
+    - name: gitUrl
+      value: git@gitlab.com:b5962/erp-catalog.git
+    - name: revision
+      value: develop
+    - name: branch-name
+      value: develop   
+    - name: pathToContext
+      value: ./
+    - name: imageUrl
+      value: javiergodon/erp-catalog
+    - name: imageTag
+      value: v0.0.1-SNAPSHOT 
+  serviceAccountName: gitlab-clone-serviceaccount
+  workspaces:
+  - name: maven-settings
+    configMap:
+      name: tekton-maven-settings
+  - name: dockerconfig
+    secret: 
+      secretName: dockerconfig-gitlab-secret 
+    # secret:
+    #   secretName: gitlab-registry-secret   
+  - name: git-source
+    volumeClaimTemplate:
+      metadata:
+        name: erp-catalog-source-pvc
+        namespace: tekton-workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+    # - name: git-source
+    #   persistentVolumeClaim:
+    #     claimName: erp-catalog-source-pvc
+    

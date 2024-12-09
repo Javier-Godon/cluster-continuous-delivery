@@ -1,0 +1,56 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crossplane-kubernetes-provider
+rules:
+  - apiGroups: [""]
+    resources:
+      [
+        "configmaps",
+        "secrets",
+        "persistentvolumeclaims",
+        "persistentvolumes",
+        "namespaces",
+        "services",
+        "pods",
+        "serviceaccounts",
+      ]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+    verbs: ["*"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["*"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["*"]
+  - apiGroups: ["networking.k8s.io"] # Adding the networking.k8s.io API group
+    resources: ["ingresses"]
+    verbs: ["*"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    verbs: ["*"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["*"]
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelines", "pipelineresources", "tasks"]
+    verbs: ["*"]
+  - apiGroups: ["operator.tekton.dev"]
+    resources: ["tektonconfigs"]
+    verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: crossplane-kubernetes-provider-binding
+subjects:
+  - kind: ServiceAccount
+    name: provider-kubernetes-71953a1e5c15
+    namespace: crossplane-system
+roleRef:
+  kind: ClusterRole
+  name: crossplane-kubernetes-provider
+  apiGroup: rbac.authorization.k8s.io

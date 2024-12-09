@@ -1,0 +1,30 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pokedex-postgres-pv-volume
+  labels:
+    type: local
+    app: pokedex-postgres
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain  
+  hostPath:
+    path: "/mnt/data/postgres-volume"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pokedex-postgres-pv-claim
+  labels:
+    app: pokedex-postgres
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi

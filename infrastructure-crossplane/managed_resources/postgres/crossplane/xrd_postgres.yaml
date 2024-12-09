@@ -23,3 +23,8 @@ spec:
               properties:
                 namespace:
                   type: string
+                label:
+                  type: object
+                  properties:
+                    postgresNamespace:
+                      type: string

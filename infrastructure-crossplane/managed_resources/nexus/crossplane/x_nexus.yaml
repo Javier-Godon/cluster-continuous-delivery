@@ -39,7 +39,7 @@ spec:
               kind: PersistentVolume
               metadata:
                 name: nexus-pv
-                namespace: "{{ .spec.namespace }}" 
+                namespace: nexus
                 labels:
                   type: local
               spec:
@@ -67,7 +67,7 @@ spec:
               kind: PersistentVolumeClaim
               metadata:
                 name: nexus-pv-claim
-                namespace: "{{ .spec.namespace }}" 
+                namespace: nexus 
               spec:
                 storageClassName: nexus-pv
                 accessModes:
@@ -91,7 +91,7 @@ spec:
               kind: Deployment
               metadata:
                 name: nexus
-                namespace: "{{ .spec.namespace }}" 
+                namespace: nexus 
               spec:
                 replicas: 1
                 selector:
@@ -144,7 +144,7 @@ spec:
               kind: Service
               metadata:
                 name: nexus-service
-                namespace: "{{ .spec.namespace }}" 
+                namespace: nexus 
                 annotations:
                     prometheus.io/scrape: 'true'
                     prometheus.io/path:   /
@@ -172,7 +172,7 @@ spec:
               kind: Ingress
               metadata:
                 name: nexus-ingress
-                namespace: "{{ .spec.namespace }}" 
+                namespace: nexus 
                 labels:
                   name: nexus-ingress
               spec:

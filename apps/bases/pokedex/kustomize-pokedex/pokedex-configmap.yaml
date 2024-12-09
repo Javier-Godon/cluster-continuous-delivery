@@ -1,0 +1,33 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: pokedex-configmap
+data:
+  application.yaml: |-
+    server:
+      port: 8089
+
+    spring:
+      application:
+        name: pokedex
+      r2dbc:
+        url: r2dbc:postgresql://pokedex-postgres.postgres:5432/postgres
+        username: postgres
+        password: postgres
+      flyway:
+        enabled: true
+        url: jdbc:postgresql://pokedex-postgres.postgres:5432/postgres
+        user: postgres
+        password: postgres
+        locations: "classpath:db/migration/{vendor}"
+        table: flyway_schema_history
+        baselineOnMigrate: true
+        createSchemas: true
+        schemas:
+          - pokedex
+
+    springdoc:
+      api-docs:
+        path: /pokedex/api-docs
+      swagger-ui:
+        path: /pokedex/swagger/api-docs-ui

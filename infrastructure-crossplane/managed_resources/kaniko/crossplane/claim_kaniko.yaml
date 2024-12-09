@@ -1,0 +1,7 @@
+apiVersion: gitops.bluesolution.es/v1alpha1
+kind: KanikoWorkload
+metadata:
+  name: kaniko-workload
+  namespace: default
+spec:
+  namespace: tekton-pipelines

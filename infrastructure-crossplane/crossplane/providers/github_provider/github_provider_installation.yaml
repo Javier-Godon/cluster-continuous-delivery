@@ -1,0 +1,7 @@
+# https://github.com/crossplane-contrib/provider-upjet-github
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-upjet-github
+spec:
+  package: crossplane-contrib/provider-upjet-github:v0.14.0

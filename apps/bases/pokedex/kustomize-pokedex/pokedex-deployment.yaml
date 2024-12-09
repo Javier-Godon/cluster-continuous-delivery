@@ -1,0 +1,52 @@
+# https://help.sonatype.com/repomanager3/installation-and-upgrades/configuring-the-runtime-environment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pokedex       
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pokedex
+  template:
+    metadata:
+      labels:
+        app: pokedex           
+    spec:
+      containers:
+        - name: pokedex          
+          image: localhost:32000/pokedex:v0.0.1-SNAPSHOT
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "1000m"
+            requests:
+              memory: "2Gi"
+              cpu: "500m" 
+          volumeMounts:
+          - name: config
+            mountPath: "/config"
+            readOnly: true
+          imagePullPolicy: IfNotPresent      
+      volumes:
+        - name: config
+          configMap:
+            name: pokedex-configmap                 
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pokedex-service  
+spec:
+  selector: 
+    app: pokedex
+  type: LoadBalancer  
+  ports:
+    - name: pokedex-server 
+      port: 8089
+      nodePort: 31010
+
+
+  
