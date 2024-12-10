@@ -28,4 +28,3 @@ credentials/
 __pycache__
 __kclcache__
 .kclvm
-kcl.mod.lock

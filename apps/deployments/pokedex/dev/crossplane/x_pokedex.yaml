@@ -17,4 +17,7 @@ spec:
         metadata:
           name: basic
         spec:
-          source: github.com/Javier-Godon/cluster-continuous-delivery/blob/main/apps/deployments/pokedex/dev/main.k
+          source: github.com/Javier-Godon/cluster-continuous-delivery/apps/deployments/pokedex/dev/main.k
+          params:
+            providerConfigRef:
+              name: kubernetes-provider
