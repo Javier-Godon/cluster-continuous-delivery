@@ -22,4 +22,3 @@ pokedexApplication: frontend.Server {
         pokedex_configmap
     ]
 }
-#
