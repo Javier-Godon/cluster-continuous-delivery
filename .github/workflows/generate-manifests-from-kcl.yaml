@@ -27,10 +27,19 @@ jobs:
       - name: Determine changed folders
         id: changes
         run: |
+          # Handle cases where github.event.before is not valid (e.g., first commit)
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            BASE_REF="HEAD~1"
+          else
+            BASE_REF="${{ github.event.before }}"
+          fi
+
           # Identify folders with changes
-          CHANGED_FOLDERS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^apps/deployments/' | awk -F'/' '{print $3"/"$4}' | sort -u)
+          CHANGED_FOLDERS=$(git diff --name-only $BASE_REF ${{ github.sha }} | grep '^apps/deployments/' | awk -F'/' '{print $3"/"$4}' | sort -u)
           echo "Changed folders: $CHANGED_FOLDERS"
-          echo "::set-output name=folders::$CHANGED_FOLDERS"
+
+          # Save folders to an environment file
+          echo "folders=$CHANGED_FOLDERS" >> $GITHUB_ENV
 
       - name: Generate manifests for changed environments
         if: steps.changes.outputs.folders != ''
@@ -47,7 +56,6 @@ jobs:
             done
           done
 
-      # Step 6: Commit and push changes
       # Step 6: Commit and push changes
       - name: Commit and push manifests
         if: steps.changes.outputs.folders != ''
