@@ -3,8 +3,8 @@ name: Generate YAML Manifests From Kcl Konfig
 on:
   push:
     paths:
-      - '**/*.k'                 # Trigger only when KCL files are changed
-      - '**apps/deployments/**'  # Trigger if deployments are updated and   
+      - "**/*.k" # Trigger only when KCL files are changed
+      - "**apps/deployments/**" # Trigger if deployments are updated and
 
 jobs:
   generate-yaml:
@@ -32,7 +32,6 @@ jobs:
           echo "Changed folders: $CHANGED_FOLDERS"
           echo "::set-output name=folders::$CHANGED_FOLDERS"
 
-      # Step 5: Generate YAML for each changed folder
       - name: Generate manifests for changed environments
         if: steps.changes.outputs.folders != ''
         run: |
@@ -42,8 +41,7 @@ jobs:
             echo "Processing apps/deployments/$SERVICE/$ENVIRONMENT"
             OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
             mkdir -p $OUTPUT_DIR
-            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR
-      # Rename generated files to ensure they have .yaml extension
+            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR      
             for FILE in $OUTPUT_DIR/*; do
               mv "$FILE" "${FILE%.yml}.yaml"
             done
