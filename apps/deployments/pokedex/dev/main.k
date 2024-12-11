@@ -1,6 +1,6 @@
 import konfig.models.kube.frontend
 import konfig.custom
-import deployments.pokedex.base.pokedex_configmap as pokedex_config
+import deployments.pokedex.base.pokedex_configmap as pokedex_configuration
 
 pokedex_application_properties: custom.ApplicationProperties {
     postgres_username = "postgres"
@@ -9,7 +9,7 @@ pokedex_application_properties: custom.ApplicationProperties {
     flyway_enabled = True
     database_url = "r2dbc:postgresql://blue-postgres.postgres:5432/postgres"
 }
-pokedex_configmap: pokedex_config.PokedexConfigmap {
+pokedex_configmap: pokedex_configuration.PokedexConfigmap {
     _application_properties = pokedex_application_properties
     namespace = "dev"
 }
@@ -22,4 +22,3 @@ pokedexApplication: frontend.Server {
         pokedex_configmap
     ]
 }
-#
