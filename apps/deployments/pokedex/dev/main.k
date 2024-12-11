@@ -17,9 +17,8 @@ pokedexApplication: frontend.Server {
     image = "ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:v0.0.1-snapshot"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
-    replicas = 1
+    replicas = 3
     configMaps = [
         pokedex_configmap
     ]
 }
-#
