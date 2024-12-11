@@ -105,7 +105,7 @@ pokedexApplication: frontend.Server {
     ]
     services = [
         service.Service {
-            type = "LoadBalancer"
+            type = "NodePort"
             ports = [
                 {
                     port = 8089
