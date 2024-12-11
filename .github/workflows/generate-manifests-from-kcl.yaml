@@ -62,7 +62,7 @@ jobs:
             echo "Processing apps/deployments/$SERVICE/$ENVIRONMENT"
             OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
             mkdir -p $OUTPUT_DIR
-            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR --format yaml
+            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR/kubernetes-manifests.yaml
             # Rename generated files to ensure they have .yaml extension
             for FILE in $OUTPUT_DIR/*; do
               mv "$FILE" "${FILE%.yml}.yaml"
