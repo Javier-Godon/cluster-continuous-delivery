@@ -17,13 +17,15 @@ spec:
         metadata:
           name: basic
         spec:
-          dependencies: 
+          config:
+            debug: true
+          dependencies: |
             k8s = "1.31.2"
             konfig = { path = "../../../konfig" }
             deployments = { path = "../../../deployments" }
-          source: github.com/Javier-Godon/cluster-continuous-delivery/apps/deployments/pokedex/dev
+          # source: github.com/Javier-Godon/cluster-continuous-delivery/apps/deployments/pokedex/dev
           params:
             providerConfigRef:
               name: kubernetes-provider
-          # annotations:
-          #   config.kubernetes.io/local-config: "true"
+            annotations:
+              config.kubernetes.io/local-config: "true"
