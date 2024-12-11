@@ -46,16 +46,22 @@ jobs:
           # Save folders to an environment file
           echo "folders=$CHANGED_FOLDERS" >> $GITHUB_ENV
 
-      - name: Generate manifests for changed environments
-        if: steps.changes.outputs.folders != ''
+      # Debug: Print the folders variable
+      - name: Debug folders variable
         run: |
-          for FOLDER in ${{ steps.changes.outputs.folders }}; do
+          echo "Folders to process: ${{ env.folders }}"
+
+      - name: Generate manifests for changed environments
+        if: ${{ env.folders != '' }}
+        run: |
+          for FOLDER in ${{ env.folders }}; do
             SERVICE=$(echo $FOLDER | cut -d'/' -f1)
             ENVIRONMENT=$(echo $FOLDER | cut -d'/' -f2)
             echo "Processing apps/deployments/$SERVICE/$ENVIRONMENT"
             OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
             mkdir -p $OUTPUT_DIR
-            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR      
+            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR --format yaml
+            # Rename generated files to ensure they have .yaml extension
             for FILE in $OUTPUT_DIR/*; do
               mv "$FILE" "${FILE%.yml}.yaml"
             done
@@ -63,7 +69,7 @@ jobs:
 
       # Step 6: Commit and push changes
       - name: Commit and push manifests
-        if: steps.changes.outputs.folders != ''
+        if: ${{ env.folders != '' }}
         run: |
           git config --local user.name "GitHub Actions"
           git config --local user.email "actions@github.com"
