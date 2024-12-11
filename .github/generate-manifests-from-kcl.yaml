@@ -1,0 +1,63 @@
+name: Generate YAML Manifests From Kcl Konfig
+
+on:
+  push:
+    paths:
+      - '**/*.k'                 # Trigger only when KCL files are changed
+      - '**apps/deployments/**'  # Trigger if deployments are updated and   
+
+jobs:
+  generate-yaml:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      # Step 3: Install KCL CLI
+      - name: Install KCL
+        run: pip install kcl
+
+      # Step 4: Identify Changed Folders
+      - name: Determine changed folders
+        id: changes
+        run: |
+          # Identify folders with changes
+          CHANGED_FOLDERS=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^apps/deployments/' | awk -F'/' '{print $3"/"$4}' | sort -u)
+          echo "Changed folders: $CHANGED_FOLDERS"
+          echo "::set-output name=folders::$CHANGED_FOLDERS"
+
+      # Step 5: Generate YAML for each changed folder
+      - name: Generate manifests for changed environments
+        if: steps.changes.outputs.folders != ''
+        run: |
+          for FOLDER in ${{ steps.changes.outputs.folders }}; do
+            SERVICE=$(echo $FOLDER | cut -d'/' -f1)
+            ENVIRONMENT=$(echo $FOLDER | cut -d'/' -f2)
+            echo "Processing apps/deployments/$SERVICE/$ENVIRONMENT"
+            OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
+            mkdir -p $OUTPUT_DIR
+            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR
+      # Rename generated files to ensure they have .yaml extension
+            for FILE in $OUTPUT_DIR/*; do
+              mv "$FILE" "${FILE%.yml}.yaml"
+            done
+          done
+
+      # Step 6: Commit and push changes
+      # Step 6: Commit and push changes
+      - name: Commit and push manifests
+        if: steps.changes.outputs.folders != ''
+        run: |
+          git config --local user.name "GitHub Actions"
+          git config --local user.email "actions@github.com"
+          git add apps/deployments/*/*/manifests/
+          git commit -m "Update manifests for changed environments"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
