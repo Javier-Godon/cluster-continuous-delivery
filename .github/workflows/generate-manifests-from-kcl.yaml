@@ -10,9 +10,11 @@ jobs:
   generate-yaml:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the code
-      - name: Checkout code
+      # Step 1: Checkout the repository with full history
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full Git history
       # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -33,6 +35,9 @@ jobs:
           else
             BASE_REF="${{ github.event.before }}"
           fi
+
+          # Fetch the base reference to ensure it exists locally
+          git fetch origin $BASE_REF
 
           # Identify folders with changes
           CHANGED_FOLDERS=$(git diff --name-only $BASE_REF ${{ github.sha }} | grep '^apps/deployments/' | awk -F'/' '{print $3"/"$4}' | sort -u)
