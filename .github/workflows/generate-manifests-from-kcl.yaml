@@ -26,8 +26,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install kcl
-        env:
-          PATH: ${{ runner.tool_cache }}/python/3.11.*/x64/bin:$PATH
+          echo "PATH=$(python -m site --user-base)/bin:\$PATH" >> $GITHUB_ENV
+          echo "Installed kcl:"
+          $(python -m site --user-base)/bin/kcl --version
+
+        # Debug Python and PATH setup
+      - name: Debug Python and PATH
+        run: |
+          echo "Python user base:"
+          python -m site --user-base
+          echo "Installed Python packages:"
+          pip list
+          echo "Current PATH:"
+          echo $PATH
 
       # Step 4: Identify Changed Folders
       - name: Determine changed folders
