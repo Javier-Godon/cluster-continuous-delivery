@@ -22,6 +22,18 @@ pokedexApplication: frontend.Server {
     imagePullPolicy = "IfNotPresent"
     namespace = "stg"
     replicas = 1
+    services = [
+        service.Service {
+            type = "NodePort"
+            ports = [
+                {
+                    port = 8089
+                    nodePort = 31012
+                    name = "pokedex-server"
+                }
+            ]
+        }
+    ]
     configMaps = [
         pokedex_configmap
     ]
