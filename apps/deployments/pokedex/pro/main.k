@@ -13,6 +13,10 @@ pokedex_configmap: pokedex_configuration.PokedexConfigmap {
     _application_properties = pokedex_application_properties
     namespace = "pro"
 }
+github_service_account: serviceaccount.ServiceAccount {
+    # name = "github-service-pull-image-account"
+    namespace = "pro"
+}
 pokedexApplication: frontend.Server {
     image = "ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:v0.0.1-snapshot"
     imagePullPolicy = "IfNotPresent"

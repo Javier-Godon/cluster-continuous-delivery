@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pokedex-dev
+  name: pokedex-pro
   namespace: argocd
   finalizers:
     # The default behaviour is foreground cascading deletion
@@ -11,7 +11,7 @@ metadata:
     # - resources-finalizer.argocd.argoproj.io/background
   # Add labels to your application object.
   labels:
-    name: pokedex-dev
+    name: pokedex-pro
 spec:
   # The project the application belongs to.
   project: blue-services
@@ -19,13 +19,13 @@ spec:
   source:
     repoURL: git@github.com:Javier-Godon/cluster-continuous-delivery.git
     targetRevision: HEAD # For Helm, this refers to the chart version.
-    path: apps/deployments/pokedex/dev/manifests
+    path: apps/deployments/pokedex/pro/manifests
 
   # Destination cluster and namespace to deploy the application
   destination:
     # cluster API URL
     server: https://kubernetes.default.svc
-    namespace: dev
+    namespace: pro
 
   # Extra information to show in the Argo CD Application details tab
   # info:
