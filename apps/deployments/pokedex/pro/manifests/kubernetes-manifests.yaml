@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pokedex
+  namespace: pro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pokedex
+  template:
+    metadata:
+      labels:
+        app: pokedex
+    spec:
+      containers:
+      - image: ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:v0.0.1-snapshot
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo livenessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: pokedex
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo readinessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+          requests:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo startupProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - mountPath: /config
+          name: config
+      serviceAccountName: github-service-pull-image-account
+      volumes:
+      - configMap:
+          name: pokedex-configmap
+        name: config
+---
+apiVersion: v1
+data:
+  application.yaml: |
+    server:
+      port: 8089
+
+    spring:
+      application:
+        name: pokedex
+      r2dbc:
+        url: r2dbc:postgresql://blue-postgres.postgres:5432/postgres
+        username: postgres
+        password: postgres
+      flyway:
+        enabled: True
+        url: jdbc:postgresql://blue-postgres.postgres:5432/postgres
+        user: postgres
+        password: postgres
+        locations: "classpath:db/migration/{vendor}"
+        table: flyway_schema_history
+        baselineOnMigrate: true
+        createSchemas: true
+        schemas: [pokedex, other]
+
+    springdoc:
+      api-docs:
+        path: /pokedex/api-docs
+      swagger-ui:
+        path: /pokedex/swagger/api-docs-ui
+kind: ConfigMap
+metadata:
+  name: pokedex-configmap
+  namespace: pro
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pokedex
+  namespace: pro
+spec:
+  ports:
+  - name: pokedex-server
+    nodePort: 31010
+    port: 8089
+  selector:
+    app: pokedex
+  type: NodePort
+---
+apiVersion: v1
+imagePullSecrets:
+- name: pull-image-from-github-registry-secret
+kind: ServiceAccount
+metadata:
+  name: github-service-pull-image-account
+  namespace: pro
