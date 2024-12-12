@@ -48,7 +48,7 @@ jobs:
 
           # Create environment list for projects affected by 'base' changes
           AFFECTED_PROJECTS=$(echo "$BASE_CHANGED" | awk -F'/' '{print $3}' | sort -u)
-          ENV_FOLDERS=$(echo "$ENV_CHANGED" | awk -F'/' '{print $3"/"$4}' | sort -u)
+          ENV_FOLDERS=$(echo "$ENV_CHANGED" | awk -F'/' '{print $3"/"$4}' | sort -u | tr '\n' ' ') # Space-separated format
 
           echo "Affected projects from base: $AFFECTED_PROJECTS"
           echo "Affected environment folders: $ENV_FOLDERS"
@@ -56,6 +56,10 @@ jobs:
           # Save results
           echo "projects=$AFFECTED_PROJECTS" >> $GITHUB_ENV
           echo "env_folders=$ENV_FOLDERS" >> $GITHUB_ENV
+
+      - name: Debug final env_folders format
+        run: |
+          echo "Formatted env_folders: ${{ env.env_folders }}"
 
       # Debug changed projects and environments
       - name: Debug changed projects and environments
