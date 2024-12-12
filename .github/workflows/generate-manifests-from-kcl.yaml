@@ -67,30 +67,32 @@ jobs:
           echo "Projects affected by base: ${{ env.projects }}"
           echo "Environment folders affected: ${{ env.env_folders }}"
 
-      # Step 5: Generate manifests for affected folders
-      - name: Generate manifests for base and environment changes
+      - name: Process environment changes (generate manifests for specific environments)
+        if: ${{ env.folders != '' }}
         run: |
-          # Process base changes (generate manifests for all environments in the project)
+          for FOLDER in ${{ env.folders }}; do
+            SERVICE=$(echo $FOLDER | cut -d'/' -f1)
+            ENVIRONMENT=$(echo $FOLDER | cut -d'/' -f2)
+            echo "Processing apps/deployments/$SERVICE/$ENVIRONMENT"
+            OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
+            mkdir -p $OUTPUT_DIR
+            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR/kubernetes-manifests.yaml
+          done
+
+      - name: Process base changes (generate manifests for all environments in the project)
+        if: ${{ env.projects != '' }}
+        run: |
           for PROJECT in ${{ env.projects }}; do
             echo "Processing all environments for project: $PROJECT"
             for ENV in dev stg pro; do
               OUTPUT_DIR="apps/deployments/$PROJECT/$ENV/manifests"
               mkdir -p $OUTPUT_DIR
-              kcl -d apps/deployments/$PROJECT/base -o $OUTPUT_DIR/kubernetes-manifests.yaml
+              echo "Generating manifests for $PROJECT/$ENV using base configuration"
+              kcl -d apps/deployments/$PROJECT/$ENV -o $OUTPUT_DIR/kubernetes-manifests.yaml
             done
           done
 
-          # Process individual environment changes
-          for FOLDER in ${{ env.env_folders }}; do
-            PROJECT=$(echo $FOLDER | cut -d'/' -f1)
-            ENVIRONMENT=$(echo $FOLDER | cut -d'/' -f2)
-            echo "Processing specific environment: $PROJECT/$ENVIRONMENT"
-            OUTPUT_DIR="apps/deployments/$PROJECT/$ENVIRONMENT/manifests"
-            mkdir -p $OUTPUT_DIR
-            kcl -d apps/deployments/$PROJECT/$ENVIRONMENT -o $OUTPUT_DIR/kubernetes-manifests.yaml
-          done
-
-      # Step 6: Commit and push changes
+      # Commit and push changes
       - name: Commit and push manifests
         if: ${{ env.folders != '' }}
         run: |

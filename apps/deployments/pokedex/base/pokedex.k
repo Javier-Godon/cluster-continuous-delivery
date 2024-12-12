@@ -65,7 +65,7 @@ pokedex = container.Main {
     }
 }
 
-github_service_account : serviceaccount.ServiceAccount {
+github_service_account: serviceaccount.ServiceAccount {
     name = "github-service-pull-image-account"
     namespace = "dev"
     imagePullSecrets: [
@@ -74,7 +74,6 @@ github_service_account : serviceaccount.ServiceAccount {
         }
     ]
 }
-
 pokedexApplication: frontend.Server {
     serviceAccount = github_service_account
     workloadType = "Deployment"
@@ -119,5 +118,6 @@ pokedexApplication: frontend.Server {
         pokedex_configmap
     ]
 }
+#
 # data = config_map.data
 # manifests.yaml_stream([pokedexApplication, pokedex_configmap, pokedex_deployment.items], {sep = "---"})
