@@ -108,14 +108,23 @@ jobs:
             done
           done
 
-      # Commit and push changes
-      - name: Commit and push manifests
-        if: ${{ env.folders != '' }}
+      - name: Check for Git changes
+        run: |
+          git status
+          git diff
+          git ls-files -m
+
+      - name: Stage and commit changes
         run: |
           git config --local user.name "GitHub Actions"
           git config --local user.email "actions@github.com"
-          git add apps/deployments/*/*/manifests/
-          git commit -m "Update manifests for changed environments"
-          git push
+          git add -f apps/deployments/*/*/manifests/ || echo "No changes to add"
+          git status
+          if git diff-index --quiet HEAD; then
+            echo "No changes detected. Skipping commit."
+          else
+            git commit -m "Update manifests for changed environments"
+            git push
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

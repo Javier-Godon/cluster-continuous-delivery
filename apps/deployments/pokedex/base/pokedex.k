@@ -118,6 +118,6 @@ pokedexApplication: frontend.Server {
         pokedex_configmap
     ]
 }
-#
+##
 # data = config_map.data
 # manifests.yaml_stream([pokedexApplication, pokedex_configmap, pokedex_deployment.items], {sep = "---"})
