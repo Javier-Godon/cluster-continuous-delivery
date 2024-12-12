@@ -110,7 +110,7 @@ metadata:
 spec:
   ports:
   - name: pokedex-server
-    nodePort: 31010
+    nodePort: 31011
     port: 8089
   selector:
     app: pokedex
