@@ -67,6 +67,18 @@ jobs:
           echo "Projects affected by base: ${{ env.projects }}"
           echo "Environment folders affected: ${{ env.env_folders }}"
 
+      - name: Debug Directory Structure
+        run: |
+          echo "Listing base directory structure:"
+          ls -R apps/deployments
+          echo "Listing directories for each project and environment:"
+          for PROJECT in ${{ env.projects }}; do
+            for ENV in dev stg pro; do
+              echo "Checking directory: apps/deployments/$PROJECT/$ENV"
+              ls apps/deployments/$PROJECT/$ENV || echo "Directory does not exist!"
+            done
+          done
+
       - name: Process environment changes (generate manifests for specific environments)
         if: ${{ env.folders != '' }}
         run: |
@@ -77,6 +89,8 @@ jobs:
             OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
             mkdir -p $OUTPUT_DIR
             kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR/kubernetes-manifests.yaml
+            echo "Generated files:"
+            ls $OUTPUT_DIR || echo "No files generated in $OUTPUT_DIR"
           done
 
       - name: Process base changes (generate manifests for all environments in the project)
@@ -89,6 +103,8 @@ jobs:
               mkdir -p $OUTPUT_DIR
               echo "Generating manifests for $PROJECT/$ENV using base configuration"
               kcl -d apps/deployments/$PROJECT/$ENV -o $OUTPUT_DIR/kubernetes-manifests.yaml
+              echo "Generated files:"
+              ls $OUTPUT_DIR || echo "No files generated in $OUTPUT_DIR"
             done
           done
 
