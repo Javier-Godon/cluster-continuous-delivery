@@ -31,42 +31,59 @@ jobs:
       - name: Determine changed folders
         id: changes
         run: |
-          # Handle cases where github.event.before is not valid (e.g., first commit)
           if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
             BASE_REF="HEAD~1"
           else
             BASE_REF="${{ github.event.before }}"
           fi
 
-          # Fetch the base reference to ensure it exists locally
           git fetch origin $BASE_REF
 
-          # Identify folders with changes
-          CHANGED_FOLDERS=$(git diff --name-only $BASE_REF ${{ github.sha }} | grep '^apps/deployments/' | awk -F'/' '{print $3"/"$4}' | sort -u)
-          echo "Changed folders: $CHANGED_FOLDERS"
+          # Detect changes in 'base' and specific environments
+          BASE_CHANGED=$(git diff --name-only $BASE_REF ${{ github.sha }} | grep '^apps/deployments/.*/base/' || true)
+          ENV_CHANGED=$(git diff --name-only $BASE_REF ${{ github.sha }} | grep '^apps/deployments/.*/\(dev\|stg\|pro\)/' || true)
 
-          # Save folders to an environment file
-          echo "folders=$CHANGED_FOLDERS" >> $GITHUB_ENV
+          echo "Base changes detected in: $BASE_CHANGED"
+          echo "Environment changes detected in: $ENV_CHANGED"
 
-      # Debug: Print the folders variable
-      - name: Debug folders variable
+          # Create environment list for projects affected by 'base' changes
+          AFFECTED_PROJECTS=$(echo "$BASE_CHANGED" | awk -F'/' '{print $3}' | sort -u)
+          ENV_FOLDERS=$(echo "$ENV_CHANGED" | awk -F'/' '{print $3"/"$4}' | sort -u)
+
+          echo "Affected projects from base: $AFFECTED_PROJECTS"
+          echo "Affected environment folders: $ENV_FOLDERS"
+
+          # Save results
+          echo "projects=$AFFECTED_PROJECTS" >> $GITHUB_ENV
+          echo "env_folders=$ENV_FOLDERS" >> $GITHUB_ENV
+
+      # Debug changed projects and environments
+      - name: Debug changed projects and environments
         run: |
-          echo "Folders to process: ${{ env.folders }}"
+          echo "Projects affected by base: ${{ env.projects }}"
+          echo "Environment folders affected: ${{ env.env_folders }}"
 
-      - name: Generate manifests for changed environments
-        if: ${{ env.folders != '' }}
+      # Step 5: Generate manifests for affected folders
+      - name: Generate manifests for base and environment changes
         run: |
-          for FOLDER in ${{ env.folders }}; do
-            SERVICE=$(echo $FOLDER | cut -d'/' -f1)
+          # Process base changes (generate manifests for all environments in the project)
+          for PROJECT in ${{ env.projects }}; do
+            echo "Processing all environments for project: $PROJECT"
+            for ENV in dev stg pro; do
+              OUTPUT_DIR="apps/deployments/$PROJECT/$ENV/manifests"
+              mkdir -p $OUTPUT_DIR
+              kcl -d apps/deployments/$PROJECT/base -o $OUTPUT_DIR/kubernetes-manifests.yaml
+            done
+          done
+
+          # Process individual environment changes
+          for FOLDER in ${{ env.env_folders }}; do
+            PROJECT=$(echo $FOLDER | cut -d'/' -f1)
             ENVIRONMENT=$(echo $FOLDER | cut -d'/' -f2)
-            echo "Processing apps/deployments/$SERVICE/$ENVIRONMENT"
-            OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
+            echo "Processing specific environment: $PROJECT/$ENVIRONMENT"
+            OUTPUT_DIR="apps/deployments/$PROJECT/$ENVIRONMENT/manifests"
             mkdir -p $OUTPUT_DIR
-            kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR/kubernetes-manifests.yaml
-            # Rename generated files to ensure they have .yaml extension
-            # for FILE in $OUTPUT_DIR/*; do
-            #   mv "$FILE" "${FILE%.yml}.yaml"
-            # done
+            kcl -d apps/deployments/$PROJECT/$ENVIRONMENT -o $OUTPUT_DIR/kubernetes-manifests.yaml
           done
 
       # Step 6: Commit and push changes
