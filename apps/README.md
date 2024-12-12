@@ -26,7 +26,8 @@ add dependency 'kcl:0.0.1' successfully
 in environments dev I would do
 
 ```
-kcl mod add ../../konfig
+kcl mod add ../../../konfig
+kcl mod add ../../../deployments
 ```
 
 and the result
