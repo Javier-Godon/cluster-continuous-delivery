@@ -1,0 +1,47 @@
+name: Update image tag in pokedex dev
+
+on:
+  repository_dispatch:
+    types:
+      - image-tag-in-pokedex-dev-updated
+
+jobs:
+  update-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install kcl-lib
+        run: pip install kcl-lib
+
+      - name: Update image in KCL
+        run: |
+          python -c "
+          from kcl_lib.kcl import Kcl
+
+          # Load and update the KCL file
+          kcl = Kcl('apps/deployments/pokedex/dev/main.k')
+          config = kcl.eval()
+          config['pokedexApplication']['image'] = 'ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}'
+
+          # Save the updated KCL file
+          with open('apps/deployments/pokedex/dev/main.k', 'w') as f:
+              f.write(kcl.dump(config))
+          "
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add apps/deployments/pokedex/dev/main.k
+          git commit -m "Update image to ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}"
+          git push
