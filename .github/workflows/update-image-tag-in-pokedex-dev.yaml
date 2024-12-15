@@ -26,16 +26,16 @@ jobs:
       - name: Update image in KCL
         run: |
           python -c "
-          from kcl_lib.kcl import Kcl
+          import kcl_lib.api as api
 
-          # Load and update the KCL file
-          kcl = Kcl('apps/deployments/pokedex/dev/main.k')
-          config = kcl.eval()
-          config['pokedexApplication']['image'] = 'ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}'
-
-          # Save the updated KCL file
-          with open('apps/deployments/pokedex/dev/main.k', 'w') as f:
-              f.write(kcl.dump(config))
+          file = "apps/deployments/pokedex/dev/main.k"
+          new_arg = "pokedexApplication.image=ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}"
+          args = api.OverrideFile_Args(
+              file=file,
+              specs=[new_arg]
+          )
+          api = api.API()
+          api.override_file(args)
           "
 
       - name: Commit and Push Changes
