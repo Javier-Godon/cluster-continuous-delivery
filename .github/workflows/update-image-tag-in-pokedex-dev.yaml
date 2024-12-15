@@ -28,13 +28,10 @@ jobs:
           python -c "
           import kcl_lib.api as api
 
-          file = "apps/deployments/pokedex/dev/main.k"
-          args = api.OverrideFile_Args(
-              file=file,
-              specs=["pokedexApplication.image=ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}"]
-          )
-          api = api.API()
-          api.override_file(args)
+          file = 'apps/deployments/pokedex/dev/main.k'
+          specs = [f'pokedexApplication.image=\"ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}\"']
+          args = api.OverrideFile_Args(file=file, specs=specs)
+          api.API().override_file(args)
           "
 
       - name: Commit and Push Changes
