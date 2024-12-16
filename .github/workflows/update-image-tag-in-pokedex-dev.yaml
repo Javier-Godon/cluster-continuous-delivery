@@ -49,6 +49,19 @@ jobs:
 
           input_file = 'apps/deployments/pokedex/dev/main.k'
           output_file = 'apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml'
-          api.API().run(input_file, output=output_file)
+
+          args = api.ExecProgram_Args(k_filename_list=[input_file])
+          yaml_result = api.exec_program(args).yaml_result
+
+          with open(output_file, 'w') as f:
+              f.write(yaml_result)
+
+          print(f'YAML manifests generated and saved to {output_file}')
           "
-          echo "Generated YAML manifests for pokedex dev."
+      - name: Commit and Push Changes for Manifests
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
+          git commit -m "Generate pokedex dev manifests for updated image tag: ${{ github.event.client_payload.image_tag }}"
+          git push
