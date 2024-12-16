@@ -23,6 +23,14 @@ jobs:
       - name: Install kcl-lib
         run: pip install kcl-lib
 
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+     
+      - name: Install KCL CLI
+        run: go install kcl-lang.io/cli/cmd/kcl@latest  
+
       - name: Update image in KCL
         run: |
           python -c "
@@ -44,20 +52,7 @@ jobs:
 
       - name: Generate YAML Manifests from KCL
         run: |
-          python -c "
-          import kcl_lib.api as api
-
-          input_file = 'apps/deployments/pokedex/dev/main.k'
-          output_file = 'apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml'
-
-          args = api.ExecProgram_Args(k_filename_list=[input_file])
-          api = api.API()
-          yaml_result = api.exec_program(args).yaml_result
-
-          with open(output_file, 'w') as f:
-              f.write(yaml_result)
-
-          print(f'YAML manifests generated and saved to {output_file}')
+          kcl -r apps/deployments/pokedex/dev -o apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
           "
       - name: Commit and Push Changes for Manifests
         run: |
