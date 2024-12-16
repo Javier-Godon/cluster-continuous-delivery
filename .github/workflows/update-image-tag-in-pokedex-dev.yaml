@@ -42,10 +42,13 @@ jobs:
           git commit -m "Update image to ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}"
           git push
 
-      - name: Trigger Manifest Generation Workflow
+      - name: Generate YAML Manifests from KCL
         run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/Javier-Godon/cluster-continuous-delivery/dispatches \
-            -d '{"event_type":"kcl-files-updated"}'
+          python -c "
+          import kcl_lib.api as api
+
+          input_file = 'apps/deployments/pokedex/dev/main.k'
+          output_file = 'apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml'
+          api.API().run(input_file, output=output_file)
+          "
+          echo "Generated YAML manifests for pokedex dev."
