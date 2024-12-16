@@ -14,7 +14,7 @@ spec:
         app: pokedex
     spec:
       containers:
-      - image: ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:fb9130b7eaf23a14ca66e445c5b161fba9376cc9
+      - image: ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:cd961a6efdccfd6b8c9d19b777eaf60863733b9d
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
