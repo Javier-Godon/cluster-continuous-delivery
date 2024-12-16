@@ -42,13 +42,13 @@ jobs:
           api.API().override_file(args)
           "
 
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git add apps/deployments/pokedex/dev/main.k
-          git commit -m "Update image to ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}"
-          git push
+      # - name: Commit and Push Changes
+      #   run: |
+      #     git config user.name "GitHub Actions Bot"
+      #     git config user.email "actions@github.com"
+      #     git add apps/deployments/pokedex/dev/main.k
+      #     git commit -m "Update image to ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}"
+      #     git push
 
       - name: Generate YAML Manifests from KCL using KCL-CLI
         run: |
@@ -73,10 +73,18 @@ jobs:
       #     print(f'YAML manifests generated and saved to {output_file}')
       #     "
 
-      - name: Commit and Push Changes for Manifests
+      # - name: Commit and Push Changes for Manifests
+      #   run: |
+      #     git config user.name "GitHub Actions Bot"
+      #     git config user.email "actions@github.com"
+      #     git add apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
+      #     git commit -m "Generate pokedex dev manifests for updated image tag: ${{ github.event.client_payload.image_tag }}"
+      #     git push
+      
+      - name: Commit and Push All Changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
-          git commit -m "Generate pokedex dev manifests for updated image tag: ${{ github.event.client_payload.image_tag }}"
+          git add apps/deployments/pokedex/dev/main.k apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
+          git commit -m "Update image and generate manifests for tag: ${{ github.event.client_payload.image_tag }}"
           git push
