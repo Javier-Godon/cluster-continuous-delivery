@@ -27,9 +27,9 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23
-     
+
       - name: Install KCL CLI
-        run: go install kcl-lang.io/cli/cmd/kcl@latest  
+        run: go install kcl-lang.io/cli/cmd/kcl@latest
 
       - name: Update image in KCL
         run: |
@@ -53,7 +53,7 @@ jobs:
       - name: Generate YAML Manifests from KCL
         run: |
           kcl -r apps/deployments/pokedex/dev -o apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
-          "
+
       - name: Commit and Push Changes for Manifests
         run: |
           git config user.name "GitHub Actions Bot"
