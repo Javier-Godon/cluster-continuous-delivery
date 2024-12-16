@@ -23,7 +23,7 @@ github_service_account: serviceaccount.ServiceAccount {
 #     }
 # ]
 pokedexApplication: frontend.Server {
-    image = "ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:78eaf61dd96eff165aec10d35e2b90a01dcaed81"
+    image = "ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:c025fe2eedb2d8827638fb9c259f55dd32f457c8"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
     replicas = 1
