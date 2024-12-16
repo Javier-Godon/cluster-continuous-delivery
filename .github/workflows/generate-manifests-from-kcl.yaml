@@ -4,7 +4,10 @@ on:
   push:
     paths:
       - "**/*.k" # Trigger only when KCL files are changed
-      - "**apps/deployments/**" # Trigger if deployments are updated and
+      - "**apps/deployments/**" # Trigger if deployments are updated
+  repository_dispatch:
+    types:
+      - kcl-files-updated # Custom event for triggering this workflow (so, generate-manifests-from-kcl receives the event, running kcl to generate the yaml manifests)
 
 jobs:
   generate-yaml:
