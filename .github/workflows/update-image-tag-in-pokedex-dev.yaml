@@ -21,15 +21,15 @@ jobs:
           python-version: "3.11"
 
       - name: Install kcl-lib
-        run: pip install kcl-lib
+        run: pip install kcl-lib==0.10.8
 
-      - name: Set up Go 1.23
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.23
+      # - name: Set up Go 1.23
+      #   uses: actions/setup-go@v5
+      #   with:
+      #     go-version: 1.23
 
-      - name: Install KCL CLI
-        run: go install kcl-lang.io/cli/cmd/kcl@latest
+      # - name: Install KCL CLI
+      #   run: go install kcl-lang.io/cli/cmd/kcl@0.10.10
 
       - name: Update image in KCL
         run: |
@@ -50,9 +50,27 @@ jobs:
           git commit -m "Update image to ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}"
           git push
 
-      - name: Generate YAML Manifests from KCL
+      # - name: Generate YAML Manifests from KCL using KCL-CLI
+      #   run: |
+      #     kcl -r apps/deployments/pokedex/dev -o apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
+
+      - name: Generate YAML Manifests from KCL using python kcl_lib
         run: |
-          kcl -r apps/deployments/pokedex/dev -o apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
+          python -c "
+          import kcl_lib.api as api
+
+          input_file = 'apps/deployments/pokedex/dev'
+          output_file = 'apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml'
+
+          args = api.ExecProgram_Args(k_filename_list=[input_file])
+          api = api.API()
+          yaml_result = api.exec_program(args).yaml_result
+
+          with open(output_file, 'w') as f:
+              f.write(yaml_result)
+
+          print(f'YAML manifests generated and saved to {output_file}')
+          "
 
       - name: Commit and Push Changes for Manifests
         run: |
