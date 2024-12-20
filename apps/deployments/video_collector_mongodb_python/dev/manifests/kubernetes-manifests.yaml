@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-collector-mongodb-python
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-collector-mongodb-python
+  template:
+    metadata:
+      labels:
+        app: video-collector-mongodb-python
+    spec:
+      containers:
+      - image: ghcr.io/javier-godon/video-collector-mongodb-python:bae6ea3-20241219t2249
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo livenessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: video-collector-mongodb-python
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo readinessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+          requests:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo startupProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - mountPath: /application.yaml
+          name: application-configuration
+          subPath: application.yaml
+      serviceAccountName: github-service-pull-image-account
+      volumes:
+      - configMap:
+          name: video-collector-mongodb-python-configmap
+          items:
+          - key: application.yaml
+            path: application.yaml
+        name: application-configuration
+---
+apiVersion: v1
+data:
+  application.yaml: |
+    server:
+      port: 8002
+    mongodb:
+      uri: mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred
+      database: blue-mongodb
+kind: ConfigMap
+metadata:
+  name: video-collector-mongodb-python-configmap
+  namespace: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-collector-mongodb-python
+  namespace: dev
+spec:
+  ports:
+  - name: video-collector-mongodb-python-server
+    nodePort: 31022
+    port: 8002
+  selector:
+    app: video-collector-mongodb-python
+  type: NodePort
+---
+apiVersion: v1
+imagePullSecrets:
+- name: pull-image-from-github-registry-secret
+kind: ServiceAccount
+metadata:
+  name: github-service-pull-image-account
+  namespace: dev

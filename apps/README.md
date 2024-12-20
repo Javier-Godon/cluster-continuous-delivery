@@ -52,3 +52,32 @@ kcl run
 
 to generate and apply manifests:
 kcl run | kubectl apply -f -
+
+So, the full process to define the deployment of an app:
+create folders base and dev,stg,pro,...(depending on your case)
+over the folder with the name of the project (ex: apps/deployments/pokedex):
+kcl mod init
+kcl mod add k8s:1.31.2 
+kcl mod add ../../konfig
+
+and delete the folder main.k that will be created
+
+over every environment folder f(dev, stg, pro,..) do:
+kcl mod init 
+kcl mod add k8s:1.31.2 
+kcl mod add ../../../konfig 
+kcl mod add ../../../deployments 
+
+over every environment add this line to kcl.mod
+
+[profile]
+entries = ["../base/<project_name>.k", "main.k", "${konfig:KCL_MOD}/models/kube/render/render.k"]
+
+in folder base create the file: <project-name>.k like pokedex.k
+(make sure the name of the folder that contains the project has the same name as project-name)
+Create a <project_name_configmap>.k like pokedex_configmap.k
+
+for a python project create too:
+application_configuration.k
+
+You can find examples for projects in Java/Spring Boot (pokedex), Python (kafka_video_server_python, kafka_video_consumer_mongodb_python), GoLang (erp_back) and Elixir/Phoenix

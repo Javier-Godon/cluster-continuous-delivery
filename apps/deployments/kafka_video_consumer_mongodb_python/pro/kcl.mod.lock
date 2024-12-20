@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.deployments]
+    name = "deployments"
+    full_name = "deployments_0.0.1"
+    version = "0.0.1"
+  [dependencies.konfig]
+    name = "konfig"
+    full_name = "konfig_0.14.0"
+    version = "0.14.0"

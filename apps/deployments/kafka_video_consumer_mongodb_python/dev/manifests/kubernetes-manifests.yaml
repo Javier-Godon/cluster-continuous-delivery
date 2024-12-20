@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-video-consumer-mongodb-python
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-video-consumer-mongodb-python
+  template:
+    metadata:
+      labels:
+        app: kafka-video-consumer-mongodb-python
+    spec:
+      containers:
+      - image: ghcr.io/javier-godon/kafka-video-consumer-mongodb-python:907d486-20241219t1417
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo livenessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: kafka-video-consumer-mongodb-python
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo readinessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+          requests:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo startupProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - mountPath: /application.yaml
+          name: application-configuration
+          subPath: application.yaml
+      serviceAccountName: github-service-pull-image-account
+      volumes:
+      - configMap:
+          name: kafka-video-server-python-configmap
+          items:
+          - key: application.yaml
+            path: application.yaml
+        name: application-configuration
+---
+apiVersion: v1
+data:
+  application.yaml: |
+    server:
+      port: 8002
+    kafka:
+      topics:
+        processed: processed-video
+        streaming: streaming-video
+      consumer:
+        bootstrap-servers:  10.152.183.90:9094
+        key-serializer: serializer
+        value-serializer: serializer
+        acks: all
+        auto-offset-reset: Undefined
+    mongodb:
+      uri:  mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred
+      database: blue-mongodb
+kind: ConfigMap
+metadata:
+  name: kafka-video-consumer-mongodb-python-configmap
+  namespace: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-video-consumer-mongodb-python
+  namespace: dev
+spec:
+  ports:
+  - name: kafka-video-server-python-server
+    nodePort: 31021
+    port: 8002
+  selector:
+    app: kafka-video-consumer-mongodb-python
+  type: NodePort
+---
+apiVersion: v1
+imagePullSecrets:
+- name: pull-image-from-github-registry-secret
+kind: ServiceAccount
+metadata:
+  name: github-service-pull-image-account
+  namespace: dev

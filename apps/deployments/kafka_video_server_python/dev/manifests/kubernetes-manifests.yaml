@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-video-server-python
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-video-server-python
+  template:
+    metadata:
+      labels:
+        app: kafka-video-server-python
+    spec:
+      containers:
+      - image: ghcr.io/javier-godon/kafka-video-server-python:853711c-20241219t1013
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo livenessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: kafka-video-server-python
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo readinessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+          requests:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo startupProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - mountPath: /application.yaml
+          name: application-configuration
+          subPath: application.yaml
+      serviceAccountName: github-service-pull-image-account
+      volumes:
+      - configMap:
+          name: kafka-video-server-python-configmap
+          items:
+          - key: application.yaml
+            path: application.yaml
+        name: application-configuration
+---
+apiVersion: v1
+data:
+  application.yaml: |
+    server:
+      port: 8002
+    kafka:
+      topics:
+        processed: processed-video
+        streaming: streaming-video
+      producer:
+        bootstrap-servers: 10.152.183.90:9094
+        key-serializer: serializer
+        value-serializer: serializer
+        acks: all
+        compression-type: Undefined
+kind: ConfigMap
+metadata:
+  name: kafka-video-server-python-configmap
+  namespace: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-video-server-python
+  namespace: dev
+spec:
+  ports:
+  - name: kafka-video-server-python-server
+    nodePort: 31020
+    port: 8002
+  selector:
+    app: kafka-video-server-python
+  type: NodePort
+---
+apiVersion: v1
+imagePullSecrets:
+- name: pull-image-from-github-registry-secret
+kind: ServiceAccount
+metadata:
+  name: github-service-pull-image-account
+  namespace: dev

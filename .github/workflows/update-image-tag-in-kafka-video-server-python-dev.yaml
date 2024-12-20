@@ -1,0 +1,55 @@
+name: Update image tag in kafka-video-server-python dev
+
+on:
+  repository_dispatch:
+    types:
+      - image-tag-in-kafka-video-server-python-dev-updated
+
+jobs:
+  update-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install kcl-lib
+        run: pip install kcl-lib==0.10.8
+
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Install KCL CLI
+        run: go install kcl-lang.io/cli/cmd/kcl@v0.10.10
+
+      - name: Update image in KCL
+        run: |
+          python -c "
+          import kcl_lib.api as api
+
+          file = 'apps/deployments/kafka_video_server_python/dev/main.k'
+          specs = [f'kafkaVideoServerPythonApplication.image=\"ghcr.io/javier-godon/kafka-video-server-python:${{ github.event.client_payload.image_tag }}\"']
+          args = api.OverrideFile_Args(file=file, specs=specs)
+          api.API().override_file(args)
+          "
+
+      - name: Generate YAML Manifests from KCL using KCL-CLI
+        run: |
+          kcl -r apps/deployments/kafka_video_server_python//dev -o apps/deployments/kafka_video_server_python//dev/manifests/kubernetes-manifests.yaml
+
+      - name: Commit and Push All Changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add apps/deployments/kafka_video_server_python//dev/main.k apps/deployments/kafka_video_server_python//dev/manifests/kubernetes-manifests.yaml
+          git commit -m "Update image and generate manifests for tag: ${{ github.event.client_payload.image_tag }}"
+          git push
