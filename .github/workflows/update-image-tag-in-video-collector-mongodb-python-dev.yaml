@@ -18,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install kcl-lib
         run: pip install kcl-lib==0.10.8
@@ -41,10 +41,16 @@ jobs:
           args = api.OverrideFile_Args(file=file, specs=specs)
           api.API().override_file(args)
           "
+      - name: Debug Updated main.k
+        run: cat apps/deployments/video_collector_mongodb_python/dev/main.k
 
       - name: Generate YAML Manifests from KCL using KCL-CLI
         run: |
-          kcl -r apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
+          kcl -v -r apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
+
+      - name: Debug Directory Structure
+        run: |
+          ls -R apps/deployments/video_collector_mongodb_python/dev
 
       - name: Commit and Push All Changes
         run: |
