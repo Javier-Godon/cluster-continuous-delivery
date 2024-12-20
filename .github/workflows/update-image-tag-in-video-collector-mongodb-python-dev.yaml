@@ -46,7 +46,7 @@ jobs:
 
       - name: Generate YAML Manifests from KCL using KCL-CLI
         run: |
-          kcl -v -r apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
+          kcl -d apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
 
       - name: Debug Directory Structure
         run: |
