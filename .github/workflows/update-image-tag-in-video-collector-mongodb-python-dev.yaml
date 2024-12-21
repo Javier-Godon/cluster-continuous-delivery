@@ -37,21 +37,20 @@ jobs:
           import kcl_lib.api as api
 
           file = 'apps/deployments/video_collector_mongodb_python/dev/main.k'
-          image_tag = '${{ github.event.client_payload.image_tag }}'.lower()
-          specs = [f'videoCollectorMongodbPythonApplication.image=\"ghcr.io/javier-godon/video-collector-mongodb-python:{image_tag}\"']
+          specs = [f'videoCollectorMongodbPythonApplication.image=\"ghcr.io/javier-godon/video-collector-mongodb-python:${{ github.event.client_payload.image_tag }}\"']
           args = api.OverrideFile_Args(file=file, specs=specs)
           api.API().override_file(args)
           "
       - name: Debug Updated main.k
         run: cat apps/deployments/video_collector_mongodb_python/dev/main.k
 
-      - name: Generate YAML Manifests from KCL using KCL-CLI
-        run: |
-          kcl -d apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
-
       - name: Debug Directory Structure
         run: |
           ls -R apps/deployments/video_collector_mongodb_python/dev
+
+      - name: Generate YAML Manifests from KCL using KCL-CLI
+        run: |
+          kcl -d apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
 
       - name: Commit and Push All Changes
         run: |
