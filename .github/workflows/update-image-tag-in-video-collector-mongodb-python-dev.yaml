@@ -37,7 +37,7 @@ jobs:
           import kcl_lib.api as api
 
           file = 'apps/deployments/video_collector_mongodb_python/dev/main.k'
-          specs = [f'videoCollectorMongodbPythonApplication.image=\"ghcr.io/javier-godon/video-collector-mongodb-python:${{ github.event.client_payload.image_tag }}\"']
+          specs = [f'videoCollectorMongodbPythonApplication.image=\"ghcr.io/javier-godon/video-collector-mongodb-python:${{ github.event.client_payload.image_tag.lower() }}\"']
           args = api.OverrideFile_Args(file=file, specs=specs)
           api.API().override_file(args)
           "
