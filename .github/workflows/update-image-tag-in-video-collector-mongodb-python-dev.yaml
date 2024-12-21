@@ -31,6 +31,9 @@ jobs:
       - name: Install KCL CLI
         run: go install kcl-lang.io/cli/cmd/kcl@v0.10.10
 
+      - name: Install KCL Dependencies
+        run: kcl mod tidy
+
       - name: Update image in KCL
         run: |
           python -c "
@@ -48,9 +51,14 @@ jobs:
         run: |
           ls -R apps/deployments/video_collector_mongodb_python/dev
 
+      - name: List Files for Debugging
+        run: |
+          pwd
+          ls -R
+
       - name: Generate YAML Manifests from KCL using KCL-CLI
         run: |
-          kcl -d apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
+          kcl -r apps/deployments/video_collector_mongodb_python/dev -o apps/deployments/video_collector_mongodb_python/dev/manifests/kubernetes-manifests.yaml
 
       - name: Commit and Push All Changes
         run: |
