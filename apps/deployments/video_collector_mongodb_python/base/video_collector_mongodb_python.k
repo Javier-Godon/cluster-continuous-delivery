@@ -1,5 +1,5 @@
 import base.application_configuration as configuration
-import base.video_collector_mongodb_python_configmap as configmap
+import .video_collector_mongodb_python_configmap as configmap
 import konfig.models.kube.frontend
 import konfig.models.kube.templates as res_tpl
 import konfig.models.kube.frontend.container

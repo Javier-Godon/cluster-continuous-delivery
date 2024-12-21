@@ -1,5 +1,5 @@
 import konfig.models.kube.frontend.configmap
-import base.application_configuration as configuration
+import .application_configuration as configuration
 
 schema VideoCollectorMongodbPythonConfigmap(configmap.ConfigMap):
     _application_configuration: configuration.ApplicationConfiguration

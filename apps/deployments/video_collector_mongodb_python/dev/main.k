@@ -1,6 +1,6 @@
 import konfig.models.kube.frontend
-import base.application_configuration as configuration
-import base.video_collector_mongodb_python_configmap as configmap
+import .base.application_configuration as configuration
+import .base.video_collector_mongodb_python_configmap as configmap
 
 kafka_server_configuration_properties: configuration.ApplicationConfiguration {
     server_port = 8002
