@@ -1,14 +1,16 @@
 import konfig.models.kube.frontend
-import .base.application_configuration as configuration
-import .base.video_collector_mongodb_python_configmap as configmap
+# import deployments.video_collector_mongodb_python.base.application_configuration as app_configuration
+import deployments.video_collector_mongodb_python.base.video_collector_mongodb_python_configmap as video_collector_configmap
+# import base.application_configuration as app_configuration
+# import base.video_collector_mongodb_python_configmap as video_collector_configmap
 
-kafka_server_configuration_properties: configuration.ApplicationConfiguration {
+kafka_server_app_configuration: video_collector_configmap.ApplicationConfiguration {
     server_port = 8002
     mongodb_ui = "mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred"
     mongodb_database = "blue-mongodb"
 }
-video_collector_mongodb_python_configmap: configmap.VideoCollectorMongodbPythonConfigmap {
-    _application_configuration = kafka_server_configuration_properties
+video_collector_mongodb_python_configmap_impl: video_collector_configmap.VideoCollectorMongodbPythonConfigmap {
+    _config = kafka_server_app_configuration
     namespace = "dev"
 }
 github_service_account: serviceaccount.ServiceAccount {
@@ -56,6 +58,6 @@ videoCollectorMongodbPythonApplication: frontend.Server {
     ]
     # subPath ensures that only the application.yaml file from the ConfigMap is mounted, avoiding replacing the entire target directory.
     configMaps = [
-        video_collector_mongodb_python_configmap
+        video_collector_mongodb_python_configmap_impl
     ]
 }

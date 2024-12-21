@@ -1,5 +1,4 @@
-import base.application_configuration as configuration
-import .video_collector_mongodb_python_configmap as configmap
+import .video_collector_mongodb_python_configmap as video_collector_configmap
 import konfig.models.kube.frontend
 import konfig.models.kube.templates as res_tpl
 import konfig.models.kube.frontend.container
@@ -10,15 +9,13 @@ import konfig.models.kube.frontend.volume as v
 import konfig.models.kube.frontend.service as service
 import konfig.models.kube.frontend.serviceaccount as serviceaccount
 
-kafka_server_configuration_properties = configuration.ApplicationConfiguration {
+kafka_server_app_configuration: video_collector_configmap.ApplicationConfiguration {
     server_port = 8002
 }
-
-video_collector_mongodb_python_configmap = configmap.VideoCollectorMongodbPythonConfigmap {
-    _application_configuration = kafka_server_configuration_properties
+video_collector_mongodb_python_configmap_impl: video_collector_configmap.VideoCollectorMongodbPythonConfigmap {
+    _config = kafka_server_app_configuration
     name = "video-collector-mongodb-python-configmap"
 }
-
 kafka_video_video_server_python = container.Main {
     name = "video-collector-mongodb-python"
     livenessProbe = p.Probe {
@@ -78,6 +75,6 @@ videoCollectorMongodbPythonApplication: frontend.Server {
     needNamespace = False
     schedulingStrategy.resource = res_tpl.small
     configMaps = [
-        video_collector_mongodb_python_configmap
+        video_collector_mongodb_python_configmap_impl
     ]
 }
