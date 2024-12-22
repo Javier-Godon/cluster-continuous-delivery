@@ -33,7 +33,7 @@ videoCollectorMongodbPythonApplication: frontend.Server {
             ports = [
                 {
                     port = 8002
-                    nodePort = 31022
+                    nodePort = 31040
                     name = "video-collector-mongodb-python-server"
                 }
             ]

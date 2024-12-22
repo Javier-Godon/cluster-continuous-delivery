@@ -30,7 +30,7 @@ kafkaVideoServerPythonApplication: frontend.Server {
             ports = [
                 {
                     port = 8002
-                    nodePort = 31020
+                    nodePort = 31030
                     name = "kafka-video-server-python-server"
                 }
             ]
