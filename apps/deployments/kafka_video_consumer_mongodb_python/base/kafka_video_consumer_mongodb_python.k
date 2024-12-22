@@ -86,3 +86,4 @@ kafkaVideoConsumerMongodbPythonApplication: frontend.Server {
         kafka_video_consumer_mongodb_python_configmap
     ]
 }
+#

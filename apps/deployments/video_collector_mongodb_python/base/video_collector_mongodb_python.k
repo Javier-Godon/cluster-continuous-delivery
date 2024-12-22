@@ -79,3 +79,4 @@ videoCollectorMongodbPythonApplication: frontend.Server {
         video_collector_mongodb_python_configmap_impl
     ]
 }
+#
