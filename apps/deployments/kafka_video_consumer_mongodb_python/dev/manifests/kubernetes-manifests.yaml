@@ -63,7 +63,7 @@ spec:
         - mountPath: /application.yaml
           name: application-configuration
           subPath: application.yaml
-      serviceAccountName: github-service-pull-image-account
+      serviceAccountName: github-service-pull-image-account-kafka-video-consumer-mongodb-python
       volumes:
       - configMap:
           name: kafka-video-server-python-configmap
@@ -114,5 +114,5 @@ imagePullSecrets:
 - name: pull-image-from-github-registry-secret
 kind: ServiceAccount
 metadata:
-  name: github-service-pull-image-account
+  name: github-service-pull-image-account-kafka-video-consumer-mongodb-python
   namespace: dev

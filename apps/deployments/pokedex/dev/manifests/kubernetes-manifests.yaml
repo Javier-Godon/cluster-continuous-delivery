@@ -62,7 +62,7 @@ spec:
         volumeMounts:
         - mountPath: /config
           name: config
-      serviceAccountName: github-service-pull-image-account
+      serviceAccountName: github-service-pull-image-account-pokedex
       volumes:
       - configMap:
           name: pokedex-configmap
@@ -121,5 +121,5 @@ imagePullSecrets:
 - name: pull-image-from-github-registry-secret
 kind: ServiceAccount
 metadata:
-  name: github-service-pull-image-account
+  name: github-service-pull-image-account-pokedex
   namespace: dev
