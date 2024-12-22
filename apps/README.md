@@ -59,6 +59,7 @@ over the folder with the name of the project (ex: apps/deployments/pokedex):
 kcl mod init
 kcl mod add k8s:1.31.2 
 kcl mod add ../../konfig
+kcl mod add ../../deployments
 
 and delete the folder main.k that will be created
 
