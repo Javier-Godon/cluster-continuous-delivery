@@ -106,4 +106,9 @@ kind: ServiceAccount
 metadata:
   name: github-service-pull-image-account
   namespace: dev
-ev
+crets:
+  - name: pull-image-from-github-registry-secret
+kind: ServiceAccount
+metadata:
+  name: github-service-pull-image-account
+  namespace: dev
