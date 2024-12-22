@@ -47,8 +47,12 @@ jobs:
           echo "Environment changes detected in: $ENV_CHANGED"
 
           # Create environment list for projects affected by 'base' changes
-          AFFECTED_PROJECTS=$(echo "$BASE_CHANGED" | awk -F'/' '{print $3}' | sort -u)
-          ENV_FOLDERS=$(echo "$ENV_CHANGED" | awk -F'/' '{print $3"/"$4}' | sort -u | tr '\n' ' ') # Space-separated format
+          AFFECTED_PROJECTS=$(echo "$BASE_CHANGED" | awk -F'/' '{print $3}' | sort -u | tr '\n' ' ')
+          ENV_FOLDERS=$(echo "$ENV_CHANGED" | awk -F'/' '{print $3"/"$4}' | sort -u | tr '\n' ' ')
+
+          # Validate and sanitize outputs
+          [ -z "$AFFECTED_PROJECTS" ] && AFFECTED_PROJECTS=""
+          [ -z "$ENV_FOLDERS" ] && ENV_FOLDERS=""
 
           echo "Affected projects from base: $AFFECTED_PROJECTS"
           echo "Affected environment folders: $ENV_FOLDERS"
@@ -80,11 +84,15 @@ jobs:
           done
 
       - name: Process environment changes (generate manifests for specific environments)
-        if: ${{ env.folders != '' }}
+        if: ${{ env.env_folders != '' }}
         run: |
-          for FOLDER in ${{ env.folders }}; do
+          for FOLDER in ${{ env.env_folders }}; do
             SERVICE=$(echo $FOLDER | cut -d'/' -f1)
             ENVIRONMENT=$(echo $FOLDER | cut -d'/' -f2)
+            if [ -z "$SERVICE" ] || [ -z "$ENVIRONMENT" ]; then
+              echo "Skipping invalid folder: $FOLDER"
+              continue
+            fi
             echo "Processing apps/deployments/$SERVICE/$ENVIRONMENT"
             OUTPUT_DIR="apps/deployments/$SERVICE/$ENVIRONMENT/manifests"
             mkdir -p $OUTPUT_DIR
@@ -97,6 +105,10 @@ jobs:
         if: ${{ env.projects != '' }}
         run: |
           for PROJECT in ${{ env.projects }}; do
+            if [ -z "$PROJECT" ]; then
+              echo "Skipping invalid project"
+              continue
+            fi
             echo "Processing all environments for project: $PROJECT"
             for ENV in dev stg pro; do
               OUTPUT_DIR="apps/deployments/$PROJECT/$ENV/manifests"
