@@ -1,4 +1,4 @@
-schema ApplicationConfiguration:
+schema KafkaVideoServerPythonAppConfig:
     server_port?: int = 8089
     kafka_topics_processed?: str
     kafka_topics_streaming?: str

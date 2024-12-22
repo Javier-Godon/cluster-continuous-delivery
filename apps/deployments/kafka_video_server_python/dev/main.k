@@ -1,8 +1,8 @@
 import konfig.models.kube.frontend
-import base.application_configuration as configuration
-import base.kafka_video_server_python_configmap as configmap
+import deployments.kafka_video_server_python.base.kafka_video_server_python_app_config as configuration
+import deployments.kafka_video_server_python.base.kafka_video_server_python_configmap as configmap
 
-kafka_server_configuration_properties: configuration.ApplicationConfiguration {
+kafka_server_configuration_properties: configuration.KafkaVideoServerPythonAppConfig {
     server_port = 8002
     kafka_producer_boostrap_servers = "10.152.183.90:9094"
 }

@@ -1,8 +1,8 @@
 import konfig.models.kube.frontend
-import base.application_configuration as configuration
-import base.kafka_video_consumer_mongodb_python_configmap as configmap
+import deployments.kafka_video_consumer_mongodb_python.base.kafka_video_consumer_mongodb_python_app_config as configuration
+import deployments.kafka_video_consumer_mongodb_python.base.kafka_video_consumer_mongodb_python_configmap as configmap
 
-kafka_consumer_mongodb_configuration_properties: configuration.ApplicationConfiguration {
+kafka_consumer_mongodb_configuration_properties: configuration.KafkaVideoConsumerMongodbPythonAppConfig {
     server_port = 8002
     kafka_consumer_boostrap_servers = "10.152.183.90:9094"
     mongodb_ui = "mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred"

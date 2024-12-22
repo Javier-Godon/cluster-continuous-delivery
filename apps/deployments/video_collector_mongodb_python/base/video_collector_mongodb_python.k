@@ -1,4 +1,5 @@
-import .video_collector_mongodb_python_configmap as video_collector_configmap
+import base.video_collector_mongodb_python_configmap as video_collector_configmap
+import base.video_collector_mongodb_python_app_config as configuration
 import konfig.models.kube.frontend
 import konfig.models.kube.templates as res_tpl
 import konfig.models.kube.frontend.container
@@ -9,7 +10,7 @@ import konfig.models.kube.frontend.volume as v
 import konfig.models.kube.frontend.service as service
 import konfig.models.kube.frontend.serviceaccount as serviceaccount
 
-kafka_server_app_configuration: video_collector_configmap.ApplicationConfiguration {
+kafka_server_app_configuration: configuration.VideoCollectorMongodbPythonAppConfiguration {
     server_port = 8002
 }
 video_collector_mongodb_python_configmap_impl: video_collector_configmap.VideoCollectorMongodbPythonConfigmap {

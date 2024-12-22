@@ -1,12 +1,8 @@
-import konfig.models.kube.frontend.configmap
+import konfig.models.kube.frontend.configmap as konfig_configmap
+import base.video_collector_mongodb_python_app_config
 
-schema ApplicationConfiguration:
-    server_port?: int = 8089
-    mongodb_ui: str
-    mongodb_database: str
-
-schema VideoCollectorMongodbPythonConfigmap(configmap.ConfigMap):
-    _config: ApplicationConfiguration
+schema VideoCollectorMongodbPythonConfigmap(konfig_configmap.ConfigMap):
+    _config: video_collector_mongodb_python_app_config.VideoCollectorMongodbPythonAppConfiguration
     data = {
         "application.yaml": """server:
   port: ${_config.server_port}
@@ -15,6 +11,4 @@ mongodb:
   database: ${_config.mongodb_database}
 """
     }
-
-    
 

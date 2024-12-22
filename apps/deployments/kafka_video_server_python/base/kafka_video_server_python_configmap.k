@@ -1,8 +1,8 @@
 import konfig.models.kube.frontend.configmap
-import base.application_configuration as configuration
+import ..base.kafka_video_server_python_app_config as configuration
 
 schema KafkaVideoServerPythonConfigmap(configmap.ConfigMap):
-    _application_configuration: configuration.ApplicationConfiguration
+    _application_configuration: configuration.KafkaVideoServerPythonAppConfig
     data = {
         "application.yaml": """server:
   port: ${_application_configuration.server_port}
