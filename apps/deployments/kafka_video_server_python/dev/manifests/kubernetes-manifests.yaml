@@ -63,7 +63,7 @@ spec:
         - mountPath: /application.yaml
           name: application-configuration
           subPath: application.yaml
-      serviceAccountName: github-service-pull-image-account
+      serviceAccountName: github-service-pull-image-account-kafka-video-server-python
       volumes:
       - configMap:
           name: kafka-video-server-python-configmap
@@ -100,7 +100,7 @@ metadata:
 spec:
   ports:
   - name: kafka-video-server-python-server
-    nodePort: 31020
+    nodePort: 31030
     port: 8002
   selector:
     app: kafka-video-server-python
@@ -111,5 +111,5 @@ imagePullSecrets:
 - name: pull-image-from-github-registry-secret
 kind: ServiceAccount
 metadata:
-  name: github-service-pull-image-account
+  name: github-service-pull-image-account-kafka-video-server-python
   namespace: dev

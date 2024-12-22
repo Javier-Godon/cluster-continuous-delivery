@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: video-collector-mongodb-python
-  namespace: dev
+  namespace: stg
 spec:
   replicas: 1
   selector:
@@ -83,17 +83,17 @@ data:
 kind: ConfigMap
 metadata:
   name: video-collector-mongodb-python-configmap
-  namespace: dev
+  namespace: stg
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: video-collector-mongodb-python
-  namespace: dev
+  namespace: stg
 spec:
   ports:
   - name: video-collector-mongodb-python-server
-    nodePort: 31040
+    nodePort: 31042
     port: 8002
   selector:
     app: video-collector-mongodb-python
@@ -105,4 +105,4 @@ imagePullSecrets:
 kind: ServiceAccount
 metadata:
   name: github-service-pull-image-account-video-collector-mongodb-python
-  namespace: dev
+  namespace: stg

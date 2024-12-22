@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: video-collector-mongodb-python
-  namespace: dev
+  name: kafka-video-consumer-mongodb-python
+  namespace: pro
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: video-collector-mongodb-python
+      app: kafka-video-consumer-mongodb-python
   template:
     metadata:
       labels:
-        app: video-collector-mongodb-python
+        app: kafka-video-consumer-mongodb-python
     spec:
       containers:
-      - image: ghcr.io/javier-godon/video-collector-mongodb-python:d5d74ad-2024-12-22T18-07
+      - image: ghcr.io/javier-godon/kafka-video-consumer-mongodb-python:8b19688-2024-12-22T17-18
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -27,7 +27,7 @@ spec:
           periodSeconds: 5
           successThreshold: 1
           timeoutSeconds: 10
-        name: video-collector-mongodb-python
+        name: kafka-video-consumer-mongodb-python
         readinessProbe:
           exec:
             command:
@@ -63,10 +63,10 @@ spec:
         - mountPath: /application.yaml
           name: application-configuration
           subPath: application.yaml
-      serviceAccountName: github-service-pull-image-account-video-collector-mongodb-python
+      serviceAccountName: github-service-pull-image-account-kafka-video-consumer-mongodb-python
       volumes:
       - configMap:
-          name: video-collector-mongodb-python-configmap
+          name: kafka-video-server-python-configmap
           items:
           - key: application.yaml
             path: application.yaml
@@ -77,26 +77,36 @@ data:
   application.yaml: |
     server:
       port: 8002
+    kafka:
+      topics:
+        processed: processed-video
+        streaming: streaming-video
+      consumer:
+        bootstrap-servers:  10.152.183.90:9094
+        key-serializer: serializer
+        value-serializer: serializer
+        acks: all
+        auto-offset-reset: Undefined
     mongodb:
-      uri: mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred
+      uri:  mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred
       database: blue-mongodb
 kind: ConfigMap
 metadata:
-  name: video-collector-mongodb-python-configmap
-  namespace: dev
+  name: kafka-video-consumer-mongodb-python-configmap
+  namespace: pro
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: video-collector-mongodb-python
-  namespace: dev
+  name: kafka-video-consumer-mongodb-python
+  namespace: pro
 spec:
   ports:
-  - name: video-collector-mongodb-python-server
-    nodePort: 31040
+  - name: kafka-video-server-python-server
+    nodePort: 31022
     port: 8002
   selector:
-    app: video-collector-mongodb-python
+    app: kafka-video-consumer-mongodb-python
   type: NodePort
 ---
 apiVersion: v1
@@ -104,5 +114,5 @@ imagePullSecrets:
 - name: pull-image-from-github-registry-secret
 kind: ServiceAccount
 metadata:
-  name: github-service-pull-image-account-video-collector-mongodb-python
-  namespace: dev
+  name: github-service-pull-image-account-kafka-video-consumer-mongodb-python
+  namespace: pro
