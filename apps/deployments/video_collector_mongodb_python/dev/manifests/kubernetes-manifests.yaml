@@ -14,7 +14,7 @@ spec:
         app: video-collector-mongodb-python
     spec:
       containers:
-      - image: ghcr.io/javier-godon/video-collector-mongodb-python:5e74bb5-20241222T1337
+      - image: ghcr.io/javier-godon/video-collector-mongodb-python:d5d74ad-2024-12-22T18-07
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -102,12 +102,6 @@ spec:
 apiVersion: v1
 imagePullSecrets:
 - name: pull-image-from-github-registry-secret
-kind: ServiceAccount
-metadata:
-  name: github-service-pull-image-account
-  namespace: dev
-crets:
-  - name: pull-image-from-github-registry-secret
 kind: ServiceAccount
 metadata:
   name: github-service-pull-image-account
