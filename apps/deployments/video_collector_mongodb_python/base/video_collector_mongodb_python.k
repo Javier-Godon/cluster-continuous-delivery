@@ -52,7 +52,7 @@ kafka_video_video_server_python = container.Main {
 }
 
 github_service_account: serviceaccount.ServiceAccount {
-    name = "github-service-pull-image-account"
+    name = "github-service-pull-image-account-video-collector-mongodb-python"
     namespace = "dev"
     imagePullSecrets: [
         {

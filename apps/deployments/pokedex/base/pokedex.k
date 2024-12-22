@@ -64,9 +64,8 @@ pokedex = container.Main {
         }
     }
 }
-
 github_service_account: serviceaccount.ServiceAccount {
-    name = "github-service-pull-image-account"
+    name = "github-service-pull-image-account-pokedex"
     namespace = "dev"
     imagePullSecrets: [
         {
