@@ -63,7 +63,7 @@ kcl mod add ../../deployments
 
 and delete the folder main.k that will be created
 
-over every environment folder f(dev, stg, pro,..) do:
+over the rest of the folders environment folder f(base,dev, stg, pro,..) do:
 kcl mod init 
 kcl mod add k8s:1.31.2 
 kcl mod add ../../../konfig 

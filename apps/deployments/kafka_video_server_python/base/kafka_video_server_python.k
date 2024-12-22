@@ -1,5 +1,5 @@
-import ..base.kafka_video_server_python_app_config as configuration
-import base.kafka_video_server_python_configmap as configmap
+import deployments.kafka_video_server_python.base.application_configuration as configuration
+import deployments.kafka_video_server_python.base.kafka_video_server_python_configmap as configmap
 import konfig.models.kube.frontend
 import konfig.models.kube.templates as res_tpl
 import konfig.models.kube.frontend.container
@@ -10,7 +10,7 @@ import konfig.models.kube.frontend.volume as v
 import konfig.models.kube.frontend.service as service
 import konfig.models.kube.frontend.serviceaccount as serviceaccount
 
-kafka_server_configuration_properties = configuration.KafkaVideoServerPythonAppConfig {
+kafka_server_configuration_properties = configuration.ApplicationConfiguration {
     server_port = 8002
     kafka_topics_processed = "processed-video"
     kafka_topics_streaming = "streaming-video"

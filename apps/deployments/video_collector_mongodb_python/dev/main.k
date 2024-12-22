@@ -1,10 +1,10 @@
 import konfig.models.kube.frontend
-import deployments.video_collector_mongodb_python.base.video_collector_mongodb_python_app_config as app_configuration
+import deployments.video_collector_mongodb_python.base.application_configuration as app_configuration
 import deployments.video_collector_mongodb_python.base.video_collector_mongodb_python_configmap as video_collector_configmap
 
 # import base.video_collector_mongodb_python_app_config as app_configuration
 # import base.video_collector_mongodb_python_configmap as video_collector_configmap
-kafka_server_app_configuration: app_configuration.VideoCollectorMongodbPythonAppConfiguration {
+kafka_server_app_configuration: app_configuration.ApplicationConfiguration {
     server_port = 8002
     mongodb_ui = "mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred"
     mongodb_database = "blue-mongodb"
@@ -23,7 +23,7 @@ github_service_account: serviceaccount.ServiceAccount {
 #     }
 # ]
 videoCollectorMongodbPythonApplication: frontend.Server {
-    image = "ghcr.io/javier-godon/video-collector-mongodb-python:9adece1-2024-12-22T16-59"
+    image = "ghcr.io/javier-godon/video-collector-mongodb-python:5e74bb5-20241222T1337"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
     replicas = 1
