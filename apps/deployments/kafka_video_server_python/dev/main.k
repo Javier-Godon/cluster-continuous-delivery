@@ -47,7 +47,7 @@ kafkaVideoServerPythonApplication: frontend.Server {
             }
             mounts = [
                 v.Mount {
-                    path = "/config/application.yaml"
+                    path = "/code/configuration/application.yaml"
                     subPath = "application.yaml"
                 }
             ]
