@@ -17,6 +17,7 @@ kafka_server_configuration_properties = configuration.ApplicationConfiguration {
     kafka_producer_key_serializer = "serializer"
     kafka_producer_value_serializer = "serializer"
     kafka_producer_acks = "all"
+    kafka_producer_compression_type = "gzip"
 }
 
 kafka_video_server_python_configmap = configmap.KafkaVideoServerPythonConfigmap {

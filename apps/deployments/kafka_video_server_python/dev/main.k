@@ -5,6 +5,7 @@ import deployments.kafka_video_server_python.base.kafka_video_server_python_conf
 kafka_server_configuration_properties: configuration.ApplicationConfiguration {
     server_port = 8002
     kafka_producer_boostrap_servers = "blue-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+    kafka_producer_compression_type = "gzip"
 }
 kafka_video_server_python_configmap: configmap.KafkaVideoServerPythonConfigmap {
     _application_configuration = kafka_server_configuration_properties
