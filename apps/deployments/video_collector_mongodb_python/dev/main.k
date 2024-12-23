@@ -23,7 +23,7 @@ github_service_account: serviceaccount.ServiceAccount {
 #     }
 # ]
 videoCollectorMongodbPythonApplication: frontend.Server {
-    image = "ghcr.io/javier-godon/video-collector-mongodb-python:d5d74ad-2024-12-22T18-07"
+    image = "ghcr.io/javier-godon/video-collector-mongodb-python:8bfff54-2024-12-23T22-34"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
     replicas = 1
