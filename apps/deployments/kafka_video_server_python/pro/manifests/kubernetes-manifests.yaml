@@ -60,7 +60,7 @@ spec:
           successThreshold: 1
           timeoutSeconds: 10
         volumeMounts:
-        - mountPath: /application.yaml
+        - mountPath: /code/app/configuration/application.yaml
           name: application-configuration
           subPath: application.yaml
       serviceAccountName: github-service-pull-image-account-kafka-video-server-python
