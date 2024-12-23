@@ -22,7 +22,7 @@ github_service_account: serviceaccount.ServiceAccount {
 #     }
 # ]
 kafkaVideoConsumerMongodbPythonApplication: frontend.Server {
-    image = "ghcr.io/javier-godon/kafka-video-consumer-mongodb-python:8b19688-2024-12-22T17-18"
+    image = "ghcr.io/javier-godon/kafka-video-consumer-mongodb-python:67c59ef-2024-12-23T22-31"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
     replicas = 1
