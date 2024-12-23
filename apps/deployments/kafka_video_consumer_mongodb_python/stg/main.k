@@ -4,7 +4,7 @@ import deployments.kafka_video_consumer_mongodb_python.base.kafka_video_consumer
 
 kafka_consumer_mongodb_configuration_properties: configuration.ApplicationConfiguration {
     server_port = 8002
-    kafka_consumer_boostrap_servers = "10.152.183.90:9094"
+    kafka_consumer_boostrap_servers = "blue-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
     mongodb_ui = "mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred"
     mongodb_database = "blue-mongodb"
 }

@@ -6,7 +6,7 @@ import deployments.video_collector_mongodb_python.base.video_collector_mongodb_p
 # import base.video_collector_mongodb_python_configmap as video_collector_configmap
 kafka_server_app_configuration: app_configuration.ApplicationConfiguration {
     server_port = 8002
-    mongodb_ui = "mongodb://admin:admin@localhost:30332/admin?readPreference=primaryPreferred"
+    mongodb_ui = "mongodb://admin:admin@blue-mongo-db.mongodb.svc.cluster.local:27017/admin?readPreference=primaryPreferred"
     mongodb_database = "blue-mongodb"
 }
 video_collector_mongodb_python_configmap_impl: video_collector_configmap.VideoCollectorMongodbPythonConfigmap {
