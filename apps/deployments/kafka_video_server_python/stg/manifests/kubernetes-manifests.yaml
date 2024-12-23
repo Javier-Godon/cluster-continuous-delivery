@@ -86,7 +86,7 @@ data:
         key-serializer: serializer
         value-serializer: serializer
         acks: all
-        compression-type: Undefined
+        compression-type: gzip
 kind: ConfigMap
 metadata:
   name: kafka-video-server-python-configmap
