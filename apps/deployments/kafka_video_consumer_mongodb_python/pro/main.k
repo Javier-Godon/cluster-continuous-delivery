@@ -49,7 +49,7 @@ kafkaVideoConsumerMongodbPythonApplication: frontend.Server {
             }
             mounts = [
                 v.Mount {
-                    path = "/application.yaml"
+                    path = "/code/app/configuration/application.yaml"
                     subPath = "application.yaml"
                 }
             ]
