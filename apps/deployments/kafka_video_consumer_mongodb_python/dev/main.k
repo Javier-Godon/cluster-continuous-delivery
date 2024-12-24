@@ -34,7 +34,7 @@ kafkaVideoConsumerMongodbPythonApplication: frontend.Server {
                 {
                     port = 8002
                     nodePort = 31021
-                    name = "kafka-video-server-python-server"
+                    name = "kafka-video-consumer-mongodb-python-server"
                 }
             ]
         }
@@ -43,7 +43,7 @@ kafkaVideoConsumerMongodbPythonApplication: frontend.Server {
         v.Volume {
             name = "application-configuration"
             volumeSource = v.ConfigMap {
-                name = "kafka-video-server-python-configmap"
+                name = "kafka-video-consumer-mongodb-python-configmap"
                 items = [
                     {key: "application.yaml", path: "application.yaml"}
                 ]

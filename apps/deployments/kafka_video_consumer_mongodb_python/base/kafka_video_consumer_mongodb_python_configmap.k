@@ -11,7 +11,7 @@ kafka:
     processed: ${_application_configuration.kafka_topics_processed}
     streaming: ${_application_configuration.kafka_topics_streaming}
   consumer:
-    bootstrap-servers:  ${_application_configuration.kafka_consumer_boostrap_servers}
+    bootstrap-servers: ${_application_configuration.kafka_consumer_boostrap_servers}
     key-serializer: ${_application_configuration.kafka_consumer_key_serializer}
     value-serializer: ${_application_configuration.kafka_consumer_value_serializer}
     acks: ${_application_configuration.kafka_consumer_acks}
