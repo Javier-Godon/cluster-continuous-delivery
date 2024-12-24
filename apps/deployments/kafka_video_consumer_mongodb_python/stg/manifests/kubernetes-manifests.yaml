@@ -86,7 +86,7 @@ data:
         key-serializer: serializer
         value-serializer: serializer
         acks: all
-        auto-offset-reset: Undefined
+        auto-offset-reset: earliest
     mongodb:
       uri:  mongodb://admin:admin@blue-mongo-db.mongodb.svc.cluster.local:27017/admin?readPreference=primaryPreferred
       database: blue-mongodb
