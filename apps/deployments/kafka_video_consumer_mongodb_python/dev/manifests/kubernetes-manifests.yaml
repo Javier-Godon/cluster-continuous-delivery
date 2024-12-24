@@ -66,7 +66,7 @@ spec:
       serviceAccountName: github-service-pull-image-account-kafka-video-consumer-mongodb-python
       volumes:
       - configMap:
-          name: kafka-video-server-python-configmap
+          name: kafka-video-consumer-mongodb-python-configmap
           items:
           - key: application.yaml
             path: application.yaml
@@ -82,7 +82,7 @@ data:
         processed: processed-video
         streaming: streaming-video
       consumer:
-        bootstrap-servers:  blue-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+        bootstrap-servers: blue-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
         key-serializer: serializer
         value-serializer: serializer
         acks: all
@@ -102,7 +102,7 @@ metadata:
   namespace: dev
 spec:
   ports:
-  - name: kafka-video-server-python-server
+  - name: kafka-video-consumer-mongodb-python-server
     nodePort: 31021
     port: 8002
   selector:
