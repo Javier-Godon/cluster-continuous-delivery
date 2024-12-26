@@ -1,66 +1,59 @@
-# cluster-continuous-delivery
-kcl examples: https://github.com/kcl-lang/kcl-lang.io/tree/main/examples
-# Install kcl openapi
-https://github.com/kcl-lang/kcl-openapi
-# generate kcl from crds:
-kcl import -m crd -o ${the_kcl_files_output_dir} -s ${your_CRD.yaml}
- # ArgoCD
- manifests(CRDs): https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
- (split into CRDs and Deployment)
- copy to yaml -> argocd_crd.yaml and argocd_deployment.yaml
+# Cluster Continuous Delivery
 
-kcl import -m crd -o ./ -s argocd_crd.yaml
-kcl import -m crd -o ./ -s argocd_deployment.yaml
+This repository is designed to facilitate the deployment of projects on Kubernetes using modern tools like Crossplane, KCL, and ArgoCD. It is organized into four main directories, each serving a specific purpose:
 
-# generate kubernetes objects like Deployments, Services,...
+---
 
-kcl import -f argocd_crd.yaml
-kcl import -f argocd_deployment.yaml
+## 📂 [.github](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/.github)
 
-# Create main.k file
-This will be our kcl program
+This folder contains workflows for **GitHub Actions**, divided into two main groups:
 
-# For kubernetes we would need k8s module but it is included when we generate CRDs
-https://artifacthub.io/packages/kcl/kcl-module/k8s/1.31.0
+1. **Image Tag Update Workflows**  
+   These workflows automatically update the container image tag in the Kubernetes manifests whenever changes to the project code are merged into the `main` branch.
 
-to do that execute: kcl mod add k8s:1.28
+2. **Kubernetes Manifest Update Workflow**  
+   The [generate-manifests-from-kcl.yaml](https://github.com/Javier-Godon/cluster-continuous-delivery/blob/main/.github/workflows/generate-manifests-from-kcl.yaml) workflow updates Kubernetes manifests manually when deployment configuration files are modified.
 
-in mod we will see 
+---
 
-```
-[dependencies]
-k8s = "1.28"
-```
+## 📂 [apps](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps)
 
+This folder contains the **KCL configurations** required to generate Kubernetes manifests for deployment. 
 
-# Get the yaml manifests
-```
-kcl run -f argocd_crd.k
-```
-over dev execute: kcl run | kubectl apply -f -
+- The repository uses the [Konfig](https://www.kcl-lang.io/docs/user_docs/guides/working-with-konfig/overview) library from KCL, enabling the generation of all necessary manifests with minimal configuration.  
+- Each project has its own subfolder:
+  - A `base` folder containing shared project configurations.
+  - Environment-specific folders (e.g., `dev`, `prod`) with configurations unique to that environment.
 
-over namespaces execute: kcl namespaces.k | kubectl apply -f -
-over argocd execute: kcl argocd_crd.k | k apply -n argocd -f -
+### ✨ Key Features:
+- **Dynamic ConfigMaps**: Using string interpolation, variables, and schemas in KCL, you can easily define and manage Kubernetes ConfigMaps.
 
-Once we have the CRDs in KCL format these are the steps to follow:
+---
 
-# Create a module with kusionstack and tunning it
+## 📂 [infrastructure-crossplane](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/infrastructure-crossplane)
 
-```
-kusion mod init <your-module-name>
+This folder contains the necessary **Crossplane manifests** and **Custom Resource Definitions (CRDs)** for each provider to deploy the required infrastructure for each project. 
 
-```
+- The `managed_resources` folder organizes the manifests by tool, making it easy to locate and manage resources.
 
-# Let's give it another go to kusion
-over kusion_argocd
+---
 
-```
-kusion init
+## 📂 [argocd](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/argocd)
 
-kusion stack create dev
+This folder includes the **ArgoCD manifests** required to implement GitOps, ensuring that the Kubernetes resources defined in the repository are deployed and synchronized effectively.
 
-kusion stack create prod
+---
 
-```
+## 🚀 Key Technologies
+- **KCL**: Simplifies the configuration of Kubernetes manifests and dynamic resource management.
+- **Crossplane**: Manages the infrastructure needed for each project directly within Kubernetes.
+- **ArgoCD**: Implements GitOps to automate and synchronize deployments.
+- **GitHub Actions**: Automates CI/CD workflows and manifest generation.
 
-From the v0.2.1 version of kam ,workload is no longer a required field in the AppConfiguration model
+---
+
+## 🌟 Getting Started
+
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/Javier-Godon/cluster-continuous-delivery.git
