@@ -12,7 +12,7 @@ This folder contains workflows for **GitHub Actions**, divided into two main gro
    These workflows automatically update the container image tag in the Kubernetes manifests whenever changes to the project code are merged into the `main` branch.
 
 2. **Kubernetes Manifest Update Workflow**  
-   The [generate-manifests-from-kcl.yaml](https://github.com/Javier-Godon/cluster-continuous-delivery/blob/main/.github/workflows/generate-manifests-from-kcl.yaml) workflow updates Kubernetes manifests manually when deployment configuration files are modified.
+   The [generate-manifests-from-kcl.yaml](https://github.com/Javier-Godon/cluster-continuous-delivery/blob/main/.github/workflows/generate-manifests-from-kcl.yaml) workflow updates Kubernetes manifests when deployment configuration files are modified manually.
 
 ---
 
