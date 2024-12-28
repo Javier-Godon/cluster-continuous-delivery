@@ -1,9 +1,0 @@
-apiVersion: deployments.bluesolution.es/v1alpha1
-kind: PokedexWorkload
-metadata:
-  name: pokedex-workload
-  namespace: dev
-spec:
-  namespace: dev
-  label:
-    environmentNamespace: dev
