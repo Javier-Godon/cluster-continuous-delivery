@@ -368,6 +368,12 @@ We have two types of workflows:
    ```
    kcl -r apps/deployments/pokedex/dev -o apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
    ```
+   In this case, what is being modified is the image tag in the manifests, unlike the previous case.  
+
+   > **Note:** Remember that this workflow is triggered by a `repository_dispatch` event: `image-tag-in-pokedex-dev-updated`. This means it runs after the corresponding CI pipeline has executed in the Pokedex application repository because a developer merged changes into the `main` branch. These changes result in a new image being built, tagged, and pushed to our registry.  
+
+   As a result, ArgoCD in this case will need to pull the new image with the specified tag in the `kubernetes-deployment.yaml` from the registry and redeploy the application with the updated version.  
+
 
 
 
