@@ -219,10 +219,9 @@ KCL files use the `.k` extension, while dependency files use `.mod` and `.mod.lo
   - Environment-specific folders (e.g., `dev`, `prod`) each have a `main.k` file with the environment-specific configuration.
 - The final YAML manifests are generated in the `manifests` folder as the file `kubernetes-manifests.yaml`.
 
-![image](./resources/repository_structure_apps_pokedex_detailed.png)
-
 ##### Example: Pokedex Project (Java Spring Boot)
 
+![image](./resources/repository_structure_apps_pokedex_detailed.png)
 ![image](./resources/pokedex_folder_structure.png)
 
 - The Pokedex application has an environment folder `dev` with:
@@ -238,7 +237,140 @@ Thanks to KCL:
 
 Updating the image tag is straightforward since it is a parameter of a schema that can be easily configured.
 There's no need for complex text parsing scripts to modify the configuration.
-This structure ensures a clean, maintainable way to manage Kubernetes manifests for multiple applications and environments.  
+This structure ensures a clean, maintainable way to manage Kubernetes manifests for multiple applications and environments. 
+
+---
+**full process to define the deployment of an app**
+```  
+   Create folders base and dev,stg,pro,...(depending on your case)
+   over the folder with the name of the project (ex: apps/deployments/pokedex):
+   kcl mod init
+   kcl mod add k8s:1.31.2 
+   kcl mod add ../../konfig
+   kcl mod add ../../deployments
+
+   and delete the folder main.k that will be created
+
+   over the rest of the folders environment folder f(base,dev, stg, pro,..) do:
+   kcl mod init 
+   kcl mod add k8s:1.31.2 
+   kcl mod add ../../../konfig 
+   kcl mod add ../../../deployments 
+
+   over every environment add this line to kcl.mod
+
+   [profile]
+   entries = ["../base/<project_name>.k", "main.k", "${konfig:KCL_MOD}/models/kube/render/render.k"]
+
+   in folder base create the file: <project-name>.k like pokedex.k
+   (make sure the name of the folder that contains the project has the same name as project-name)
+   Create a <project_name_configmap>.k like pokedex_configmap.k
+
+   for a python project create too:
+   application_configuration.k
+
+You can find examples for projects in Java/Spring Boot (pokedex), Python (kafka_video_server_python, kafka_video_consumer_mongodb_python), GoLang (erp_back) and Elixir/Phoenix
+   
+```
+---
+
+![image](./resources/application_kcl_definition.jpg)
+
+
+As we can see in the image, KCL allows us to define schemas, such as `PokedexConfigmap` (as shown in **1. Schema definition**), which contains a series of configurable parameters. In our case, we use this schema as a class (in Object-Oriented Programming terminology) to generate a ConfigMap. This ConfigMap will overwrite the `application.yaml` configuration file of our Spring Boot project for each environment. The advantage is that, as we can see, each value is a configurable parameter.
+
+In **2. Basic common configuration**, we create what in Object-Oriented Programming terminology would be the concrete classes or instances based on the schemas defined in KCL. These schemas could be:
+- Our custom-defined schemas.
+- Schemas provided by the Konfig project of KCL.
+- Schemas from the [k8s:1.31.2](https://artifacthub.io/packages/kcl/kcl-module/k8s) module, which we imported into our KCL project definition. This module essentially contains the schemas of the Kubernetes API.
+
+We can observe that generic parameters for all environments are defined, such as `server_port`, `application_name`, and `flyway_schemas` for our `application.yaml`. Similarly, generic configurations are defined for the ConfigMap and what in Konfig represents the main configuration for the container.
+
+Later, in **3. Concrete configuration for DEV**, we define specific configurations for the development environment. Unlike Helm or Kustomize, we do not work with plain text and apply composition. Instead, our `pokedex_configmap` object will already include the parameter values defined in **2** and additionally any specific parameters we indicate at this stage, such as `namespace = "dev"`.
+
+More importantly, as we can see, `frontend.Server` (a Konfig schema from KCL) contains a parameter `image`, which will be used to generate the `image` parameter of the Kubernetes deployment in YAML format (**4. Final result kubernetes-manifests.yaml**). This enables us to modify it easily and 
+automatically within our CI/CD process.
+
+---
+
+### 2. **argocd**
+
+![image](./resources/argocd_configuration.jpg)
+
+
+In the `argocd` folder, we find the ArgoCD manifests grouped by application and environment. As an example, the image shows the manifest for the `pokedex` application in the `dev` environment.
+
+When we apply this Kubernetes object to our cluster (`kubectl apply -f pokedex-dev.yaml`), ArgoCD will continuously monitor any changes in the repository specified in `source.repoURL` (in our case, this is our Deployment/GitOps repository). Specifically, it will track the contents of the folder indicated in `source.path` (`apps/deployments/dev/manifests`) and reconcile the desired state defined in that path with what is actually deployed in the namespace dev of our cluster. This reconciliation happens constantly, by default every 3 minutes.
+
+This way, any change made to the `kubernetes-manifests.yaml` file in that folder (for example, a change in the tag of the image to be deployed) will be detected and applied automatically (or manually, depending on the configuration we specify for each environment).
+
+---
+
+### 3. **infrastructure-crossplane**
+
+![image](./resources/crossplane_configuration.jpg)
+
+Suppose we want to deploy PostgreSQL in our cluster. For this, we navigate to the `postgresql` folder, where we find a subfolder named `crossplane`. This folder will always contain the following:
+
+1. A [Composite Resource Definition (XRD)](https://docs.crossplane.io/latest/concepts/composite-resource-definitions/), in our case, `xrd_postgresql.yaml`.  
+2. A [Composition](https://docs.crossplane.io/latest/concepts/compositions/), in our case, `x_postgresql.yaml`.  
+   This composition is based on the XRD and specifies exactly which components we want Crossplane to reconcile in our cluster and which provider will handle them. In our case, since we are deploying directly onto our cluster, we use the [Kubernetes Provider](https://github.com/crossplane-contrib/provider-kubernetes). A complete list of available providers can be found on the [Upbound Marketplace](https://marketplace.upbound.io/providers).  
+3. A [Claim](https://docs.crossplane.io/latest/concepts/claims/), in our case, `claim_postgresql.yaml`.  
+
+To deploy this infrastructure, the deployment order must always be:  
+**Composite Resource Definition -> Composition -> Claim**.
+
+```
+kubectl apply -f xrd_postgresql.yaml
+kubectl apply -f x_postgresql.yaml
+kubectl apply -f claim_postgresql.yaml
+```
+
+### 4. **.github**
+
+![image](./resources/github_folder_structure.png)
+
+### Explanation of the `.github` Folder
+
+This folder contains the necessary resources for configuring the CI/CD aspects related to GitHub Actions.  
+
+> **Note:** As mentioned, our Dagger pipelines can run anywhere, so we could choose any other tool, such as Jenkins or Tekton, without needing to modify these pipelines.  
+
+We have two types of workflows:
+
+1. **Workflow to update `kubernetes-manifests.yaml` when a Platform Engineer makes changes in this repository (Deployment/GitOps repository).**  
+   For example, suppose the file `apps/deployments/pokedex/base/pokedex.k` is modified. Since this file is a generic configuration for the Pokedex application and affects all environments, this change will trigger the workflow `generate-manifests-from-kcl.yaml`.  
+   This workflow will update the three `kubernetes-manifests.yaml` files in the respective subfolders for each environment (dev, pro, and stg).  
+   While this updates the manifests, it does not modify the image tag of our application. However, ArgoCD will detect these changes and apply them to the cluster as soon as it identifies the updates.  
+   To generate the new manifests, the corresponding KCL command is used:  
+   ```
+   kcl -d apps/deployments/$SERVICE/$ENVIRONMENT -o $OUTPUT_DIR/kubernetes-manifests.yaml
+   kcl -d apps/deployments/$PROJECT/$ENV -o $OUTPUT_DIR/kubernetes-manifests.yaml
+   ```
+
+2. **Workflow per application and environment**
+   For example, for Pokedex in the dev environment, we have the workflow update-image-tag-in-pokedex-dev.yaml.
+
+   As shown, modifying the image tag is straightforward with KCL. We simply update the value of a parameter, **pokedexApplication.image** in a well-defined schema.
+   Since we are using Python, we utilize the library [kcl-lib](https://pypi.org/project/kcl-lib/).
+   ```
+   python -c "
+          import kcl_lib.api as api
+
+          file = 'apps/deployments/pokedex/dev/main.k'
+          specs = [f'pokedexApplication.image=\"ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:${{ github.event.client_payload.image_tag }}\"']
+          args = api.OverrideFile_Args(file=file, specs=specs)
+          api.API().override_file(args)
+          "
+   ```
+
+   After modifying this parameter, we regenerate the corresponding kubernetes-manifests.yaml files.
+   ```
+   kcl -r apps/deployments/pokedex/dev -o apps/deployments/pokedex/dev/manifests/kubernetes-manifests.yaml
+   ```
+
+
+
 
 
 
