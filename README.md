@@ -374,7 +374,150 @@ We have two types of workflows:
 
    As a result, ArgoCD in this case will need to pull the new image with the specified tag in the `kubernetes-deployment.yaml` from the registry and redeploy the application with the updated version.  
 
+---
+## Tool Selection: A Comprehensive Rationale
 
+
+## Why KCL?
+   As stated in its [documentation](https://www.kcl-lang.io/docs/user_docs/getting-started/intro):
+
+   Communities have been making significant efforts to improve their configuration technologies, which can be categorized into three groups:
+
+      - Low-level data format-based tools: Utilize external tools to enhance reuse and validation, specifically for templating, patching, and validation.
+      - Domain-Specific Languages (DSLs) and Configuration Languages (CLs): Improve language capabilities.
+      - General Purpose Language (GPL)-based solutions: Use frameworks like Cloud Development Kit (CDK) to define configurations.
+
+   Simplifying the Options:
+
+   - YAML/JSON/Kustomize/Helm: Best for structured key-value pairs or Kubernetes-native tools.
+   - HCL: Great for removing boilerplate with good human readability, especially for Terraform users.
+   - CUE: Recommended for type systems that improve stability and scalability.
+   - KCL: Ideal for modern modeling with type systems, scalable configurations, pure functions, rules, and automation.
+
+   Comparisons with Other Tools:
+
+   - vs. YAML/JSON: YAML/JSON are limited for large-scale configuration changes. KCL abstracts configuration data, enabling more flexibility for multi-environment setups.
+   - vs. Jsonnet/GCL: Jsonnet and GCL reduce boilerplate but have runtime errors, weak type-checking, and performance issues for large templates. KCL outperforms in static type checking and large-scale scenarios.
+   - vs. HCL: HCL struggles with complex object definitions and resource constraints, whereas KCL is self-contained and provides better integration with cloud-native tools.
+   - vs. CUE: CUE is strong in constraints but has runtime bottlenecks for large models. KCL’s declarative syntax and static compilation make it more scalable and easier to use.
+   - vs. Helm: Helm is templated YAML with package management but lacks robust model abstraction. KCL’s flexible merge strategies and static analysis outperform Helm for advanced use cases.
+
+   > **Note:** While **Timoni** is an innovative Helm alternative, I’ve chosen KCL due to its superior documentation and active community.
+   This choice is personal and not a blanket recommendation against Timoni or any other tools
+
+## Why not Helm? 
+
+   Helm is one of the most popular tools for managing Kubernetes manifests, but it's not without its drawbacks. 
+   Choosing alternatives like KCL, CUE, or Timoni might be more appropriate in some scenarios depending on your use case.
+   Helm is a solid tool with a proven track record, but its templating complexity, lack of strict validation, and stateful operations can make it less suitable for teams seeking a modern, declarative, and GitOps-friendly approach to Kubernetes management.
+   Tools like KCL, CUE, and Timoni offer more robust validation, modularity, and composability, making them excellent alternatives for cloud-native infrastructure management.
+
+   Here's an analysis of the cons of Helm and why other tools could be better alternatives:
+###   Cons of Helm
+* Imperative Tendencies in Operations
+    * Helm charts can be operated imperatively (helm install, helm upgrade, helm rollback), which can lead to manual interventions and make the deployment history harder to track in a GitOps workflow.
+    * This goes against the declarative principles that tools like Kubernetes aim to promote.
+
+* YAML Templating Complexity
+    * Helm uses Go templates for YAML generation, which can become verbose and error-prone. The templating syntax is not intuitive for many developers, especially when dealing with complex logic.
+    * Debugging Helm templates can be challenging since syntax errors or logic issues only surface at runtime.
+
+* Lack of Schema Validation
+    * Helm charts don't enforce strict schema validation out of the box. Errors in values files or templates can go unnoticed until they cause runtime issues.
+    * Tools like KCL and CUE provide robust type and schema validation, catching errors early during development.
+
+* Limited Composability
+    * Helm lacks native support for deeply composable configurations. Complex deployments often result in duplication or hard-to-maintain templates.
+    * Alternatives like CUE or Timoni inherently support better modularity and composability.
+
+* Upgrade and Rollback Challenges
+    * While Helm allows for upgrades and rollbacks, they can sometimes lead to unexpected behaviors, especially if the templates include logic that doesn't cleanly handle changes.
+    * Stateful resources can end up in inconsistent states without additional care.
+
+* State Dependency on Tiller/Release Data
+    * Helm tracks release history in its own storage (ConfigMaps or Secrets). If this data is corrupted or lost, it can be challenging to recover the exact state of a deployment.
+    * Alternatives like KCL and CUE do not rely on external state storage but instead focus on stateless, declarative configurations.
+
+* Large Learning Curve for Complex Scenarios
+    * Helm's extensive feature set and reliance on Go templating can create a steep learning curve, especially for developers who are not familiar with the templating language.   
+
+## Why Not Jenkins?
+
+   While Jenkins has been a staple CI/CD tool for years, several drawbacks make it less favorable to me compared to more modern tools:
+
+   Key Limitations of Jenkins:
+   - **Complex Setup:** Requires significant setup and maintenance, particularly for plugins and distributed builds.
+   - **Plugin Dependency:** Heavy reliance on plugins can lead to fragility and upgrade challenges.
+   - **UI/UX:** Outdated user interface compared to modern alternatives.
+   - **Scaling Issues:** Scaling Jenkins for distributed builds often requires additional infrastructure and expertise.
+   - **Manual Configuration:** Lacks native support for declarative pipeline definitions, making it less suited for GitOps workflows.
+   - **Security Risks:** Longstanding concerns about security vulnerabilities in plugins and configurations.
+   - **Community Shift:** Modern tools like GitHub Actions, GitLab CI, and Tekton offer better community support and faster innovation cycles.
+
+   Jenkins has long been a cornerstone of CI/CD pipelines, enabling organizations to automate build and deployment processes effectively.
+   However, as technology has evolved, Jenkins’ architecture and design philosophy are showing their age.
+   While it remains a powerful tool, it’s increasingly clear that Jenkins was built for an earlier era, one defined by static infrastructure and siloed teams.
+
+   ## Challenges with Jenkins in the Modern DevOps Landscape
+   1. **Legacy Architecture: Master-Agent Model**
+   Jenkins’ architecture is based on a master node orchestrating multiple build agents.
+   While this model scales to handle diverse workloads, it reflects a static and resource-heavy approach:
+
+      - Static Build Agents: Each agent is typically configured for a specific purpose (e.g., Windows for .NET, Linux for Java).
+       Adding support for new environments (e.g., Go) requires provisioning new agents, which can be time-consuming and prone to errors.
+      - Heavy Infrastructure Costs: Agents are often virtual or even physical machines, leading to inefficiencies compared to ephemeral, container-based infrastructure.
+       This approach feels outdated in an era where infrastructure is expected to be dynamic and on-demand.
+
+   2. **Dependency on Plugins**
+         Jenkins relies heavily on plugins to extend functionality, which introduces complexity and risk:
+
+      - Configuration Overhead: Features like Docker build agents, Kubernetes integration, or ephemeral build environments require additional plugins. These plugins need constant updates, and dependencies between them can cause compatibility issues.
+      - Steep Learning Curve: Teams often spend significant time configuring and maintaining plugins instead of focusing on delivering value.
+
+      The reliance on plugins creates a fragile ecosystem that contrasts with the simplicity and robustness expected in cloud-native workflows.
+
+   3. **Static Infrastructure Mentality**
+   Jenkins was designed in a time when static servers in data centers were the norm. While it can integrate with modern tools, this is often a retrofit rather than a seamless experience:
+
+      - Manual Provisioning: The default setup assumes long-lived build agents. Adopting more dynamic setups, like Dockerized agents or Kubernetes, requires significant manual effort.
+      - Limited Agility: In fast-paced environments, teams need pipelines that can adapt and scale with minimal intervention. Jenkins’ static infrastructure assumptions can slow teams down.
+
+   4. **Operational Complexity**
+   The administrative burden of Jenkins is significant compared to modern CI/CD solutions:
+
+      - Maintenance-Heavy: Jenkins requires frequent maintenance for its master node and agents, including security updates, performance tuning, and backups.
+      - Scaling Challenges: Scaling Jenkins often involves setting up additional hardware or VMs, which can be costly and labor-intensive. This contrasts with cloud-native systems designed to scale automatically.
+
+## Jenkins and Traditional Structures
+   - Jenkins emerged when CI/CD pipelines were relatively new concepts, and its primary focus was automation.
+   - Early on, organizations typically had dedicated operations teams managing infrastructure, while developers focused on writing code. 
+   Jenkins allowed these two groups to collaborate by providing a central tool for running builds and deployments.
+   - It often relied on a **monolithic approach**, with pipelines managed as Jenkinsfiles tied closely to Jenkins itself, making it harder to decouple from the tool.
+   - In many cases, Jenkins pipelines reflect a linear workflow that doesn’t fully embrace the flexibility or scalability modern cloud-native approaches offer.
+   ## Kubernetes, Shifting Left, and Modern Tools
+   * Kubernetes represents a paradigm shift. It treats infrastructure as declarative code, empowering developers to define infrastructure needs in a way that's version-controlled and portable.
+   * The **shift-left philosophy** pushes responsibilities like testing, security, and infrastructure management closer to development, ensuring issues are caught early.
+   * Modern CI/CD tools like ArgoCD, Argo workflows, Tekton, Dagger, and others align with this philosophy:   
+       * They integrate natively with Kubernetes.
+       * They’re lightweight, cloud-native, and often follow GitOps practices, where the desired state of the infrastructure and applications is stored in Git.
+       * Pipelines can run in ephemeral containers, avoiding reliance on a specific tool like Jenkins to manage and execute workflows.
+
+## Cultural Misalignment with Modern DevOps Practices
+   Jenkins reflects a philosophy where development and operations were distinct fields. In this model:
+
+   Developers focused on application code, while operations teams managed infrastructure and pipelines.
+   Pipelines were often centralized and managed by a small group of specialists.
+   Modern DevOps emphasizes a **shift-left** approach, where developers own more of the CI/CD process and infrastructure is treated as code  
+
+## Conclusion
+
+   While Jenkins was revolutionary in its time, in my opinion its architecture and operational model feel increasingly dated in today’s cloud-native landscape. 
+   Its reliance on static infrastructure, plugin-heavy ecosystem, and centralized control reflect an older approach to CI/CD that is misaligned with the agility, scalability, and developer empowerment demanded by modern DevOps practices. 
+
+   > **Note:** This choice is personal and by no means implies that Jenkins or any other tool should not be considered.
+    In fact, I have suggested on more than one occasion the possibility of integrating Dagger pipelines into Jenkins.
+     My intention with this repository is to explore and delve into different ways of implementing CI/CD using tools that are currently gaining traction, to study their feasibility, and to demonstrate how to build a CI/CD pipeline with them. 
+     In this context, Jenkins is a sufficiently mature tool, and hundreds of examples can be found everywhere. Here, I simply present alternative approaches to doing things.
 
 
 
