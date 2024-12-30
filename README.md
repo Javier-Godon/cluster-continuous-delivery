@@ -383,9 +383,9 @@ We have two types of workflows:
 
    Communities have been making significant efforts to improve their configuration technologies, which can be categorized into three groups:
 
-      - Low-level data format-based tools: Utilize external tools to enhance reuse and validation, specifically for templating, patching, and validation.
-      - Domain-Specific Languages (DSLs) and Configuration Languages (CLs): Improve language capabilities.
-      - General Purpose Language (GPL)-based solutions: Use frameworks like Cloud Development Kit (CDK) to define configurations.
+   - Low-level data format-based tools: Utilize external tools to enhance reuse and validation, specifically for templating, patching, and validation.
+   - Domain-Specific Languages (DSLs) and Configuration Languages (CLs): Improve language capabilities.
+   - General Purpose Language (GPL)-based solutions: Use frameworks like Cloud Development Kit (CDK) to define configurations.
 
    Simplifying the Options:
 
