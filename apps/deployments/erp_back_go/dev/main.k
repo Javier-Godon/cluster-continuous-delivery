@@ -5,7 +5,7 @@ import deployments.erp_back_go.base.erp_back_go_configmap as configmap
 erp_back_go_configuration_properties: configuration.ApplicationConfiguration {
     server_port = 8799
     postgres_db_driver = "postgres"
-    postgres_uri = "postgres://postgres:postgres@blue-env.com:31543/blue_postgres?sslmode=disable&search_path=public"
+    postgres_uri = "postgres://postgres:postgres@blue-postgres.postgres.svc.cluster.local:5432/blue_postgres?sslmode=disable&search_path=public"
     postgres_user = "postgres"
     postgres_password = "postgres"
     postgres_database = "blue-mongodb"
