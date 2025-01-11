@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: erp-back-go
-  namespace: dev
+  namespace: pro
 spec:
   replicas: 1
   selector:
@@ -86,17 +86,17 @@ data:
 kind: ConfigMap
 metadata:
   name: erp-back-go-configmap
-  namespace: dev
+  namespace: pro
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: erp-back-go
-  namespace: dev
+  namespace: pro
 spec:
   ports:
   - name: erp-back-go-server
-    nodePort: 31060
+    nodePort: 31061
     port: 8002
   selector:
     app: erp-back-go
@@ -108,4 +108,4 @@ imagePullSecrets:
 kind: ServiceAccount
 metadata:
   name: github-service-pull-image-account-erp-back-go
-  namespace: dev
+  namespace: pro
