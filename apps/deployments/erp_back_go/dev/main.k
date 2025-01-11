@@ -1,7 +1,6 @@
 import konfig.models.kube.frontend
 import deployments.erp_back_go.base.application_configuration as configuration
 import deployments.erp_back_go.base.erp_back_go_configmap as configmap
-import konfig.models.kube.frontend.serviceaccount as serviceaccount
 
 erp_back_go_configuration_properties: configuration.ApplicationConfiguration {
     server_port = 8799

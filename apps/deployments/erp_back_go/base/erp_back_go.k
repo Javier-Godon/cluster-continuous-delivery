@@ -10,16 +10,14 @@ import konfig.models.kube.frontend.volume as v
 import konfig.models.kube.frontend.service as service
 import konfig.models.kube.frontend.serviceaccount as serviceaccount
 
-erp_back_go_configuration_properties = configuration.ApplicationConfiguration {
+erp_back_go_configuration_properties: configuration.ApplicationConfiguration {
     server_port = 8799
     postgres_db_driver = "postgres"
 }
-
-erp_back_go_configmap = configmap.ErpBackGoConfigmap {
+erp_back_go_configmap: configmap.ErpBackGoConfigmap {
     _application_configuration = erp_back_go_configuration_properties
     name = "erp-back-go-configmap"
 }
-
 erp_back_go = container.Main {
     name = "erp-back-go"
     livenessProbe = p.Probe {
