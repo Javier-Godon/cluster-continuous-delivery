@@ -18,7 +18,7 @@ github_service_account: serviceaccount.ServiceAccount {
     namespace = "dev"
 }
 erpBackGoApplication: frontend.Server {
-    image = "ghcr.io/javier-godon/erp-back:1b78a5a-2025-01-06t22-18"
+    image = "ghcr.io/javier-godon/erp-back:deff077-2025-01-11T19-24"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
     replicas = 1
