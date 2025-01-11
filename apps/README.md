@@ -78,7 +78,7 @@ in folder base create the file: <project-name>.k like pokedex.k
 (make sure the name of the folder that contains the project has the same name as project-name)
 Create a <project_name_configmap>.k like pokedex_configmap.k
 
-for a python project create too:
+for a python, go project create too:
 application_configuration.k
 
-You can find examples for projects in Java/Spring Boot (pokedex), Python (kafka_video_server_python, kafka_video_consumer_mongodb_python), GoLang (erp_back) and Elixir/Phoenix
+You can find examples for projects in Java/Spring Boot (pokedex), Python (kafka_video_server_python, kafka_video_consumer_mongodb_python), GoLang (erp_back_go) and Elixir/Phoenix

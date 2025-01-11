@@ -25,7 +25,7 @@ kafka_video_server_python_configmap = configmap.KafkaVideoServerPythonConfigmap 
     name = "kafka-video-server-python-configmap"
 }
 
-kafka_video_video_server_python = container.Main {
+kafka_video_server_python = container.Main {
     name = "kafka-video-server-python"
     livenessProbe = p.Probe {
         failureThreshold = 3
@@ -72,7 +72,7 @@ kafkaVideoServerPythonApplication: frontend.Server {
     serviceAccount = github_service_account
     workloadType = "Deployment"
     name = "kafka-video-server-python"
-    mainContainer = kafka_video_video_server_python
+    mainContainer = kafka_video_server_python
     useBuiltInLabels = False
     useBuiltInSelector = False
     selector = {

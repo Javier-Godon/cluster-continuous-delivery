@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: erp-back-go
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: erp-back-go
+  template:
+    metadata:
+      labels:
+        app: erp-back-go
+    spec:
+      containers:
+      - image: ghcr.io/javier-godon/erp-back:1b78a5a-2025-01-06t22-18
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo livenessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: erp-back-go
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo readinessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+          requests:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo startupProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - mountPath: /app/application.yaml
+          name: application-configuration
+          subPath: application.yaml
+      serviceAccountName: github-service-pull-image-account-erp-back-go
+      volumes:
+      - configMap:
+          name: erp-back-go-configmap
+          items:
+          - key: application.yaml
+            path: application.yaml
+        name: application-configuration
+---
+apiVersion: v1
+data:
+  application.yaml: |
+    server:
+      port: 8799
+    postgres:
+      dbDriver: postgres
+      uri: postgres://postgres:postgres@blue-env.com:31543/blue_postgres?sslmode=disable&search_path=public
+      user: postgres
+      password: postgres
+      database: blue-blue-mongodb
+kind: ConfigMap
+metadata:
+  name: erp-back-go-configmap
+  namespace: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: erp-back-go
+  namespace: dev
+spec:
+  ports:
+  - name: erp-back-go-server
+    nodePort: 31030
+    port: 8002
+  selector:
+    app: erp-back-go
+  type: NodePort
+---
+apiVersion: v1
+imagePullSecrets:
+- name: pull-image-from-github-registry-secret
+kind: ServiceAccount
+metadata:
+  name: github-service-pull-image-account-erp-back-go
+  namespace: dev

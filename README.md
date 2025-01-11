@@ -471,7 +471,8 @@ We have two types of workflows:
    2. **Dependency on Plugins**
          Jenkins relies heavily on plugins to extend functionality, which introduces complexity and risk:
 
-      - Configuration Overhead: Features like Docker build agents, Kubernetes integration, or ephemeral build environments require additional plugins. These plugins need constant updates, and dependencies between them can cause compatibility issues.
+      - Configuration Overhead: Features like Docker build agents, Kubernetes integration, or ephemeral build environments require additional plugins.
+       These plugins need constant updates, and dependencies between them can cause compatibility issues.
       - Steep Learning Curve: Teams often spend significant time configuring and maintaining plugins instead of focusing on delivering value.
 
       The reliance on plugins creates a fragile ecosystem that contrasts with the simplicity and robustness expected in cloud-native workflows.
@@ -486,7 +487,8 @@ We have two types of workflows:
    The administrative burden of Jenkins is significant compared to modern CI/CD solutions:
 
       - Maintenance-Heavy: Jenkins requires frequent maintenance for its master node and agents, including security updates, performance tuning, and backups.
-      - Scaling Challenges: Scaling Jenkins often involves setting up additional hardware or VMs, which can be costly and labor-intensive. This contrasts with cloud-native systems designed to scale automatically.
+      - Scaling Challenges: Scaling Jenkins often involves setting up additional hardware or VMs, which can be costly and labor-intensive.
+       This contrasts with cloud-native systems designed to scale automatically.
 
 ## Jenkins and Traditional Structures
    - Jenkins emerged when CI/CD pipelines were relatively new concepts, and its primary focus was automation.
