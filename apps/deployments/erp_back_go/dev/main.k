@@ -27,7 +27,7 @@ erpBackGoApplication: frontend.Server {
             type = "NodePort"
             ports = [
                 {
-                    port = 8002
+                    port = 8799
                     nodePort = 31060
                     name = "erp-back-go-server"
                 }
