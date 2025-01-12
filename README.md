@@ -696,9 +696,11 @@ We are going to include a Go project in our CI/CD pipeline. To achieve this, we 
 
    - for a non spring boot java project create too: **application_configuration.k**
 
-   ![image](./resources/erp_back_go_deployment_files_structure.png)
+   The final result should look like this:
 
-You can find examples for projects in Java/Spring Boot ([pokedex](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/pokedex)), Python ([kafka_video_server_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/kafka_video_server_python), [kafka_video_consumer_mongodb_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/kafka_video_consumer_mongodb_python), [video_collector_mongodb_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/video_collector_mongodb_python)), GoLang ([erp_back_go](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/erp_back_go)) and Elixir/Phoenix
+     ![image](./resources/erp_back_go_deployment_files_structure.png)
+
+   You can find examples for projects in Java/Spring Boot ([pokedex](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/pokedex)), Python ([kafka_video_server_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/kafka_video_server_python), [kafka_video_consumer_mongodb_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/kafka_video_consumer_mongodb_python), [video_collector_mongodb_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/video_collector_mongodb_python)), GoLang ([erp_back_go](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/erp_back_go)) and Elixir/Phoenix
 
 5. **Create a [Workflow for Updating Image Tags](https://github.com/Javier-Godon/cluster-continuous-delivery/blob/main/.github/workflows/update-image-tag-in-erp-back-dev.yaml)**  
    Develop a GitHub Actions workflow in [deployment/GitOps repository](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/.github/workflows) to update the image tag in Kubernetes deployment manifests monitored by ArgoCD (or any other GitOps tool in use).
