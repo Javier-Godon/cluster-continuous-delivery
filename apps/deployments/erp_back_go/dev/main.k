@@ -18,7 +18,7 @@ github_service_account: serviceaccount.ServiceAccount {
     namespace = "dev"
 }
 erpBackGoApplication: frontend.Server {
-    image = "ghcr.io/javier-godon/erp-back:4686f7f-2025-01-12T18-07"
+    image = "ghcr.io/javier-godon/erp-back:32402a5-2025-01-12T17-40"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
     replicas = 1
@@ -45,7 +45,7 @@ erpBackGoApplication: frontend.Server {
             }
             mounts = [
                 v.Mount {
-                    path = "/application.yaml"
+                    path = "/app/application.yaml"
                     subPath = "application.yaml"
                 }
             ]
