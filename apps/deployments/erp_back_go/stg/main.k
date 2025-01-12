@@ -45,7 +45,7 @@ erpBackGoApplication: frontend.Server {
             }
             mounts = [
                 v.Mount {
-                    path = "/app/application.yaml"
+                    path = "/application.yaml"
                     subPath = "application.yaml"
                 }
             ]
