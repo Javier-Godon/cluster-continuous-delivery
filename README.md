@@ -521,6 +521,195 @@ We have two types of workflows:
      My intention with this repository is to explore and delve into different ways of implementing CI/CD using tools that are currently gaining traction, to study their feasibility, and to demonstrate how to build a CI/CD pipeline with them. 
      In this context, Jenkins is a sufficiently mature tool, and hundreds of examples can be found everywhere. Here, I simply present alternative approaches to doing things.
 
+## Annex: Adding a Go Project to the CI/CD
+
+We are going to include a Go project in our CI/CD pipeline. To achieve this, we will follow these steps:
+
+1. **Include a Dockerfile**  
+   Add a `Dockerfile` to the root of the Go project.
+
+   ```
+   # Use the official Go image as the build stage
+   FROM golang:1.23.4 AS builder
+
+   # Set the Current Working Directory inside the container
+   WORKDIR /app
+
+   # Copy go.mod and go.sum files to the container
+   COPY app/go.mod app/go.sum ./
+
+   # Download all dependencies (cache dependencies layer)
+   RUN go mod download
+
+   # Copy the source code into the container
+   COPY . .
+
+   WORKDIR /app/app
+
+   # Build the application (replace "main.go" with your actual entry point if different)
+   RUN go build -o app .
+
+   # Use a minimal base image for the final container
+   FROM alpine:latest
+
+   # Install necessary certificates for HTTPS
+   RUN apk --no-cache add ca-certificates
+
+   # Set the Current Working Directory inside the container
+   WORKDIR /root/
+
+   # Copy the compiled binary from the builder
+   COPY --from=builder /app/app .
+
+   # Expose the port your Gin app runs on
+   EXPOSE 8080
+
+   # Command to run the executable
+   CMD ["./main"]
+   ```
+
+2. **Create a Dagger Pipeline**  
+   Create a new Dagger pipeline as a completely independent project.  
+   Since this is a Go project, we will create the pipeline in Go.  
+   - Create a separate folder named `dagger_go`.
+   - Initialize a Go module in this folder with `go mod init dagger_go`.
+   - Add the necessary Dagger dependencies using:  
+     ```
+     go get github.com/dagger/dagger
+     ```
+   - Create a file `pipeline.go` inside the `dagger_go` folder and write the pipeline code there.  
+
+   Each project will have its own `go.mod`, `go.sum`, and `main.go`.  
+
+   To run the pipeline from the command line and pass environment variables, use a command like:  
+   ```
+   CR_PATH=<token> USERNAME=<user> go run pipeline.go
+   ```
+   The pipeline will perform the following steps:
+
+    - Use the recipe specified in the Dockerfile to build a Docker image.
+    - Push the image to the container registry.
+    - Trigger a repository [dispatch event](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#create-a-repository-dispatch-event) in the [deployment/GitOps repository](https://github.com/Javier-Godon/cluster-continuous-delivery) using the **event image-tag-in-erp-back-go-dev-updated**.
+    The payload of this event includes the new image tag (**imageTag**).
+    This dispatch event will trigger a GitHub Actions workflow ([repository_dispatch](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#repository_dispatch)) to update the image tag in Kubernetes deployment manifests.
+
+    The next step is to create a folder containing the Kubernetes manifest configurations written in KCL, as well as the GitHub Actions workflow to capture the repository dispatch event and update the deployment manifests.
+
+3. **Automate Pipeline Execution**  
+   The Dagger pipeline, which is initially run manually for testing, must be automated in the [project’s GitHub repository](https://github.com/Javier-Godon/erp-back):
+
+    - Create a .github/workflows folder.
+    - Add two YAML files:
+        - [trigger-dagger-ci-pipeline.yaml](https://github.com/Javier-Godon/erp-back/blob/main/.github/workflows/trigger-dagger-ci-pipeline.yaml): Defines the trigger for the pipeline.
+        ```
+         name: Trigger Dagger Pipeline
+
+         on:
+         push:
+            branches:
+               - main
+
+         jobs:
+         trigger-dagger-pipeline:
+            runs-on: ubuntu-latest
+
+            steps:
+               - name: Trigger Dagger Pipeline Workflow
+               uses: peter-evans/repository-dispatch@v3
+               with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  event-type: dagger-pipeline-trigger
+                  client-payload: '{"image_tag": "main-${{ github.sha }}" }'
+        ```
+        - [run-dagger-ci-pipeline.yaml](https://github.com/Javier-Godon/erp-back/blob/main/.github/workflows/run-dagger-ci-pipeline.yaml): Executes the pipeline.
+        ```
+         name: Run Dagger Pipeline
+
+         on:
+         workflow_dispatch: # Manually triggered workflow
+         repository_dispatch:
+            types:
+               - dagger-pipeline-trigger
+
+         jobs:
+         run-dagger-pipeline:
+            runs-on: ubuntu-latest
+
+            steps:
+               - name: Set Environment Variables
+               env:
+                  CR_PAT: ${{ secrets.CR_PAT }}
+                  USERNAME: ${{ secrets.USERNAME }}
+               run: |
+                  # Export environment variables so Dagger can access them
+                  echo "CR_PAT=${CR_PAT}" >> $GITHUB_ENV
+                  echo "USERNAME=${USERNAME}" >> $GITHUB_ENV
+               # Step 1: Checkout the repository
+               - name: Checkout repository
+               uses: actions/checkout@v4
+
+               # Step 2: Set up Go environment
+               - name: Set up Go
+               uses: actions/setup-go@v5
+               with:
+                  go-version: "1.23.4" # Use the Go version required by your pipeline
+
+               # Step 4: Install dependencies
+               - name: Install dependencies
+               run: |
+                  cd app
+                  go mod tidy
+
+               # Step 5: Execute Dagger pipeline
+               - name: Run Dagger pipeline
+               run: |
+                  cd dagger_go
+                  go run pipeline.go
+         ```
+         - Create the necessary repository secrets and configure the required permissions for the GITHUB_TOKEN.
+
+4. **Add Deployment Configurations**  
+   In the [deployment/GitOps repository](https://github.com/Javier-Godon/cluster-continuous-delivery), create the required configurations under the apps folder in a new directory named erp_back_go, following the next steps:
+   - create folders base and dev,stg,pro,...(depending on your case) over the folder with the name of the project (ex: apps/deployments/pokedex):
+   ```
+    kcl mod init
+    kcl mod add k8s:1.31.2
+    kcl mod add ../../konfig
+    kcl mod add ../../deployments
+   ```
+   and delete the folder main.k that will be created
+
+   - over the rest of the folders environment folder f(base,dev, stg, pro,..) do:
+   ```
+    kcl mod init
+    kcl mod add k8s:1.31.2
+    kcl mod add ../../../konfig
+    kcl mod add ../../../deployments
+    ```
+    and delete the folder main.k that will be created in base folder (not in dev, stg, pro,..)
+
+   - over every environment add this line to kcl.mod
+   ```
+   [profile] entries = ["../base/<project_name>.k", "main.k", "${konfig:KCL_MOD}/models/kube/render/render.k"]
+   ```
+   - in folder **base** create the file: .k like pokedex.k (make sure the name of the folder that contains the project has the same name as project-name) Create a <project_name_configmap>.k like pokedex_configmap.k
+
+   - for a non spring boot java project create too: **application_configuration.k**
+
+   ![image](./resources/erp_back_go_deployment_files_structure.png)
+
+You can find examples for projects in Java/Spring Boot ([pokedex](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/pokedex)), Python ([kafka_video_server_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/kafka_video_server_python), [kafka_video_consumer_mongodb_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/kafka_video_consumer_mongodb_python), [video_collector_mongodb_python](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/video_collector_mongodb_python)), GoLang ([erp_back_go](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/apps/deployments/erp_back_go)) and Elixir/Phoenix
+
+5. **Create a [Workflow for Updating Image Tags](https://github.com/Javier-Godon/cluster-continuous-delivery/blob/main/.github/workflows/update-image-tag-in-erp-back-dev.yaml)**  
+   Develop a GitHub Actions workflow in [deployment/GitOps repository](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/.github/workflows) to update the image tag in Kubernetes deployment manifests monitored by ArgoCD (or any other GitOps tool in use).
+
+5. **Deploy with ArgoCD**      
+   Create an ArgoCD Application in [argocd/managed/apps folder](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/argocd/managed/apps) and deploy it in the Kubernetes cluster.
+   ```
+   k apply -f erp-back-go-dev.yaml
+   ```
+   ArgoCD will monitor the deployment manifest changes and apply them whenever a modification is detected.
+
 
 
 
