@@ -705,12 +705,25 @@ We are going to include a Go project in our CI/CD pipeline. To achieve this, we 
 5. **Create a [Workflow for Updating Image Tags](https://github.com/Javier-Godon/cluster-continuous-delivery/blob/main/.github/workflows/update-image-tag-in-erp-back-dev.yaml)**  
    Develop a GitHub Actions workflow in [deployment/GitOps repository](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/.github/workflows) to update the image tag in Kubernetes deployment manifests monitored by ArgoCD (or any other GitOps tool in use).
 
+   Its execution can be checked in Actions:
+
+   ![image](./resources/image-tag-in-erp-back-go-dev-updated-actions.png)
+
+   and the result will be:
+
+   ![image](./resources/result-commmit-of-update-image-and-generate-manifests.png)
+
+
 6. **Deploy with ArgoCD**      
    Create an ArgoCD Application in [argocd/managed/apps folder](https://github.com/Javier-Godon/cluster-continuous-delivery/tree/main/argocd/managed/apps) and deploy it in the Kubernetes cluster.
    ```
    k apply -f erp-back-go-dev.yaml
    ```
    ArgoCD will monitor the deployment manifest changes and apply them whenever a modification is detected.
+
+   ![image](./resources/erp-back-go-dev-argocd-ui.png)
+
+  
 
 
 
