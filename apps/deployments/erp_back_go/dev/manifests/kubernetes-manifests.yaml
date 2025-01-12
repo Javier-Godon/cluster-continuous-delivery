@@ -14,7 +14,7 @@ spec:
         app: erp-back-go
     spec:
       containers:
-      - image: ghcr.io/javier-godon/erp-back:4686f7f-2025-01-12T18-07
+      - image: ghcr.io/javier-godon/erp-back:32402a5-2025-01-12T17-40
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -60,7 +60,7 @@ spec:
           successThreshold: 1
           timeoutSeconds: 10
         volumeMounts:
-        - mountPath: /application.yaml
+        - mountPath: /app/application.yaml
           name: application-configuration
           subPath: application.yaml
       serviceAccountName: github-service-pull-image-account-erp-back-go
