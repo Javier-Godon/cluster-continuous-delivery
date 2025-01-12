@@ -14,7 +14,7 @@ spec:
         app: erp-back-go
     spec:
       containers:
-      - image: ghcr.io/javier-godon/erp-back:15e468e-2025-01-12T13-54
+      - image: ghcr.io/javier-godon/erp-back:424c83a-2025-01-12T17-20
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
