@@ -97,7 +97,7 @@ spec:
   ports:
   - name: erp-back-go-server
     nodePort: 31061
-    port: 8002
+    port: 8799
   selector:
     app: erp-back-go
   type: NodePort
