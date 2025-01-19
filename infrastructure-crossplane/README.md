@@ -88,6 +88,8 @@ k create -f grafana-operator-v5.14.0.yaml
 
 ELASTICSEARCH
 
+username: elastic
+
 ```
 kubectl port-forward service/blue-kibana-kb-http 5601 -n elk
 ```

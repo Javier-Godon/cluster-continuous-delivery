@@ -7,90 +7,90 @@ spec:
     apiVersion: gitops.bluesolution.es/v1alpha1
     kind: QuestdbCompositeWorkload
   resources:
-  # OPERATOR 
-    - name: questdbOperatorNamespace
-      base:
-        apiVersion: kubernetes.crossplane.io/v1alpha2
-        kind: Object
-        metadata:
-          name: questdb-operator-namespace
-          namespace: default
-        spec:
-          forProvider:
-            manifest:
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: questdb-operator-system
-          providerConfigRef:
-            name: kubernetes-provider
+    # OPERATOR
+    # - name: questdbOperatorNamespace
+    #   base:
+    #     apiVersion: kubernetes.crossplane.io/v1alpha2
+    #     kind: Object
+    #     metadata:
+    #       name: questdb-operator-namespace
+    #       namespace: default
+    #     spec:
+    #       forProvider:
+    #         manifest:
+    #           apiVersion: v1
+    #           kind: Namespace
+    #           metadata:
+    #             name: questdb-operator-system
+    #       providerConfigRef:
+    #         name: kubernetes-provider
 
-    - name: questdbOperatorCrds
-      base:
-        apiVersion: kubernetes.crossplane.io/v1alpha2
-        kind: Object
-        metadata:
-          name: questdb-operator-crds
-          namespace: default
-        spec:
-          forProvider:
-            manifest:
-              apiVersion: apiextensions.k8s.io/v1
-              kind: CustomResourceDefinition
-              metadata:
-                name: questdbs.questdb.io
-              spec:
-                group: questdb.io
-                names:
-                  kind: QuestDB
-                  listKind: QuestDBList
-                  plural: questdbs
-                  singular: questdb
-                scope: Namespaced
-                versions:
-                - name: v1
-                  served: true
-                  storage: true
-                  schema:
-                    openAPIV3Schema:
-                      type: object
-          providerConfigRef:
-            name: kubernetes-provider 
+    # - name: questdbOperatorCrds
+    #   base:
+    #     apiVersion: kubernetes.crossplane.io/v1alpha2
+    #     kind: Object
+    #     metadata:
+    #       name: questdb-operator-crds
+    #       namespace: default
+    #     spec:
+    #       forProvider:
+    #         manifest:
+    #           apiVersion: apiextensions.k8s.io/v1
+    #           kind: CustomResourceDefinition
+    #           metadata:
+    #             name: questdbs.questdb.io
+    #           spec:
+    #             group: questdb.io
+    #             names:
+    #               kind: QuestDB
+    #               listKind: QuestDBList
+    #               plural: questdbs
+    #               singular: questdb
+    #             scope: Namespaced
+    #             versions:
+    #             - name: v1
+    #               served: true
+    #               storage: true
+    #               schema:
+    #                 openAPIV3Schema:
+    #                   type: object
+    #       providerConfigRef:
+    #         name: kubernetes-provider
 
-  # Deploys the QuestDB operator itself as a Kubernetes Deployment in the questdb-system namespace.
-    - name: questdbOperatorDeployment
-      base:
-        apiVersion: kubernetes.crossplane.io/v1alpha2
-        kind: Object
-        metadata:
-          name: questdb-operator-deployment
-          namespace: default
-        spec:
-          forProvider:
-            manifest:
-              apiVersion: apps/v1
-              kind: Deployment
-              metadata:
-                name: questdb-operator
-                namespace: questdb-operator-system
-              spec:
-                replicas: 1
-                selector:
-                  matchLabels:
-                    control-plane: questdb-operator
-                template:
-                  metadata:
-                    labels:
-                      control-plane: questdb-operator
-                  spec:
-                    serviceAccountName: questdb-operator
-                    containers:
-                    - name: manager
-                      image: questdb/questdb-operator:v0.5.1
-                      command:
-                      - /manager
-          providerConfigRef:
-            name: kubernetes-provider
+    # Deploys the QuestDB operator itself as a Kubernetes Deployment in the questdb-system namespace.
+    # - name: questdbOperatorDeployment
+    #   base:
+    #     apiVersion: kubernetes.crossplane.io/v1alpha2
+    #     kind: Object
+    #     metadata:
+    #       name: questdb-operator-deployment
+    #       namespace: default
+    #     spec:
+    #       forProvider:
+    #         manifest:
+    #           apiVersion: apps/v1
+    #           kind: Deployment
+    #           metadata:
+    #             name: questdb-operator
+    #             namespace: questdb-operator-system
+    #           spec:
+    #             replicas: 1
+    #             selector:
+    #               matchLabels:
+    #                 control-plane: questdb-operator
+    #             template:
+    #               metadata:
+    #                 labels:
+    #                   control-plane: questdb-operator
+    #               spec:
+    #                 serviceAccountName: questdb-operator
+    #                 containers:
+    #                 - name: manager
+    #                   image: questdb/questdb-operator:v0.5.1
+    #                   command:
+    #                   - /manager
+    #       providerConfigRef:
+    #         name: kubernetes-provider
     - name: questdbNamespace
       base:
         apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -107,7 +107,7 @@ spec:
                 name: questdb
           providerConfigRef:
             name: kubernetes-provider
-      # Tells crossplante to create a QuestDB custom resource from the questdb kubernetes operator in the questdb namespace      
+    # Tells crossplante to create a QuestDB custom resource from the questdb kubernetes operator in the questdb namespace
     - name: questdbSingleLocal
       base:
         apiVersion: kubernetes.crossplane.io/v1alpha2
@@ -116,6 +116,8 @@ spec:
           name: questdb-instance
           namespace: default
         spec:
+          providerConfigRef:
+            name: kubernetes-provider
           forProvider:
             manifest:
               apiVersion: crd.questdb.io/v1beta1
@@ -130,88 +132,84 @@ spec:
                   app.kubernetes.io/managed-by: crossplane
                   app.kubernetes.io/created-by: questdb-operator
               spec:
-                imagePullPolicy: Always                
-                image: questdb/questdb:8.1.4
-                storage:
-                  volumeClaimTemplate:
-                    spec:
-                      selector:
-                        matchLabels:
-                          app: blue-questdb  # Matches the label in your PVC
-                      storageClassName: manual
-                      accessModes:
-                        - ReadWriteMany
-                      resources:
-                        requests:
-                          storage: 20Gi
-                        providerConfigRef:
-                          name: kubernetes-provider 
-                volumeMounts:
-                  - name: questdb-storage
-                    mountPath: /var/lib/questdb  # Specify the custom mount path
-                volumes:
-                  - name: questdb-storage
-                    persistentVolumeClaim:
-                      claimName: blue-questdb-pv-claim          
+                replicas: 1
+                imagePullPolicy: IfNotPresent
+                image: questdb/questdb:8.2.1
+                volume:
+                  size: 20Gi
+                # storage:
+                #   volumeClaimTemplate:
+                #     spec:
+                #       selector:
+                #         matchLabels:
+                #           app: blue-questdb # Matches the label in your PVC
+                #       storageClassName: manual
+                #       accessModes:
+                #         - ReadWriteMany
+                #       resources:
+                #         requests:
+                #           storage: 20Gi
+                # volumeMounts:
+                #   - name: questdb-storage
+                #     mountPath: /var/lib/questdb # Specify the custom mount path
+                # volumes:
+                #   - name: questdb-storage
+                #     persistentVolumeClaim:
+                #       claimName: blue-questdb-pv-claim
 
-    - name: questdbBlueQuestdbPvVolume
-      base:
-        apiVersion: kubernetes.crossplane.io/v1alpha2
-        kind: Object
-        metadata:
-          name: questdb-persistent-volume
-          namespace: default
-        spec:
-          providerConfigRef:
-            name: kubernetes-provider 
-          forProvider:
-            manifest:
-              kind: PersistentVolume
-              apiVersion: v1
-              metadata:
-                name: blue-questdb-pv-volume
-                namespace: questdb
-                labels:
-                  type: local
-                  app: blue-questdb
-              spec:
-                storageClassName: manual
-                capacity:
-                  storage: 20Gi
-                accessModes:
-                  - ReadWriteMany
-                persistentVolumeReclaimPolicy: Retain  
-                hostPath:
-                  path: "/mnt/data/questdb-volume"
+    # - name: questdbBlueQuestdbPvVolume
+    #   base:
+    #     apiVersion: kubernetes.crossplane.io/v1alpha2
+    #     kind: Object
+    #     metadata:
+    #       name: questdb-persistent-volume
+    #       namespace: default
+    #     spec:
+    #       providerConfigRef:
+    #         name: kubernetes-provider
+    #       forProvider:
+    #         manifest:
+    #           kind: PersistentVolume
+    #           apiVersion: v1
+    #           metadata:
+    #             name: blue-questdb-pv-volume
+    #             namespace: questdb
+    #             labels:
+    #               type: local
+    #               app: blue-questdb
+    #           spec:
+    #             storageClassName: manual
+    #             capacity:
+    #               storage: 20Gi
+    #             accessModes:
+    #               - ReadWriteMany
+    #             persistentVolumeReclaimPolicy: Retain
+    #             hostPath:
+    #               path: "/mnt/data/questdb-volume"
 
-    - name: questdbBlueQuestdbPvVolumeClaim
-      base:
-        apiVersion: kubernetes.crossplane.io/v1alpha2
-        kind: Object
-        metadata:
-          name: questdb-persistent-volume-claim
-          namespace: default
-        spec:
-          providerConfigRef:
-            name: kubernetes-provider 
-          forProvider:
-            manifest: 
-              kind: PersistentVolumeClaim
-              apiVersion: v1
-              metadata:
-                name: blue-questdb-pv-claim
-                namespace: questdb
-                labels:
-                  app: blue-questdb
-              spec:
-                storageClassName: manual
-                accessModes:
-                  - ReadWriteMany
-                resources:
-                  requests:
-                    storage: 20Gi               
-
-  
-
-                                              
-          
+    # - name: questdbBlueQuestdbPvVolumeClaim
+    #   base:
+    #     apiVersion: kubernetes.crossplane.io/v1alpha2
+    #     kind: Object
+    #     metadata:
+    #       name: questdb-persistent-volume-claim
+    #       namespace: default
+    #     spec:
+    #       providerConfigRef:
+    #         name: kubernetes-provider
+    #       forProvider:
+    #         manifest:
+    #           kind: PersistentVolumeClaim
+    #           apiVersion: v1
+    #           metadata:
+    #             name: blue-questdb-pv-claim
+    #             namespace: questdb
+    #             labels:
+    #               app: blue-questdb
+    #           spec:
+    #             storageClassName: manual
+    #             accessModes:
+    #               - ReadWriteMany
+    #             resources:
+    #               requests:
+    #                 storage: 20Gi
