@@ -23,6 +23,11 @@ github_service_account: serviceaccount.ServiceAccount {
 #     }
 # ]
 pokedexApplication: frontend.Server {
+    podMetadata: {
+        annotations: {
+            "instrumentation.opentelemetry.io/inject-java:" = "pokedex-otel-instrumentation"
+        }
+    }
     image = "ghcr.io/javier-godon/ddd-hexagonal-vertical-slice-cqrs-reactive-kubernetes:2ec7c49-2024-12-22T17-03"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
