@@ -10,6 +10,8 @@ spec:
       app: pokedex
   template:
     metadata:
+      annotations:
+        'instrumentation.opentelemetry.io/inject-java:': pokedex-otel-instrumentation
       labels:
         app: pokedex
     spec:
