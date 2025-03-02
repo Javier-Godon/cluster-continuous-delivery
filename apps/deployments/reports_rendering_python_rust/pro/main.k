@@ -41,7 +41,7 @@ reportsRenderingPythonRustApplication: frontend.Server {
         v.Volume {
             name = "application-configuration"
             volumeSource = v.ConfigMap {
-                name = "reports_rendering_python_rust-configmap"
+                name = "reports_rendering_python_rust_configmap"
                 items = [
                     {key: "application.yaml", path: "application.yaml"}
                 ]
