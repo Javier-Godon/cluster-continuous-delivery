@@ -32,7 +32,7 @@ reportsRenderingPythonRustApplication: frontend.Server {
                 {
                     port = 8002
                     nodePort = 31040
-                    name = "reports_rendering_python_rust-server"
+                    name = "reports_rendering_python_rust_server"
                 }
             ]
         }
