@@ -66,7 +66,7 @@ spec:
       serviceAccountName: github-service-pull-image-account-reports-rendering-python-rust
       volumes:
       - configMap:
-          name: reports_rendering_python_rust-configmap
+          name: reports_rendering_python_rust_configmap
           items:
           - key: application.yaml
             path: application.yaml
