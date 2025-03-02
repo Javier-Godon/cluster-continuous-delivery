@@ -83,7 +83,7 @@ data:
       database: reports
 kind: ConfigMap
 metadata:
-  name: reports-rendering-python-rust-configmap
+  name: reports-rendering-python-rust_configmap
   namespace: stg
 ---
 apiVersion: v1
@@ -93,7 +93,7 @@ metadata:
   namespace: stg
 spec:
   ports:
-  - name: reports_rendering_python_rust-server
+  - name: reports_rendering_python_rust_server
     nodePort: 31040
     port: 8002
   selector:
