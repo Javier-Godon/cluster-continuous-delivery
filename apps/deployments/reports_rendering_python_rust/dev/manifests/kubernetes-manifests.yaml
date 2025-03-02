@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reports-rendering-python-rust
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reports-rendering-python-rust
+  template:
+    metadata:
+      labels:
+        app: reports-rendering-python-rust
+    spec:
+      containers:
+      - image: ghcr.io/javier-godon/reports_rendering_python_rust:c778216-2024-12-25T17-26
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo livenessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: reports-rendering-python-rust
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo readinessProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+          requests:
+            cpu: '1'
+            memory: '2Gi'
+            ephemeral-storage: '20Gi'
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - '-c'
+            - echo startupProbe
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 10
+        volumeMounts:
+        - mountPath: /code/app/configuration/application.yaml
+          name: application-configuration
+          subPath: application.yaml
+      serviceAccountName: github-service-pull-image-account-reports-rendering-python-rust
+      volumes:
+      - configMap:
+          name: reports_rendering_python_rust-configmap
+          items:
+          - key: application.yaml
+            path: application.yaml
+        name: application-configuration
+---
+apiVersion: v1
+data:
+  application.yaml: |
+    server:
+      port: 8008
+    questdb:
+      user: questdb
+      pass: questdb
+      database: reports
+kind: ConfigMap
+metadata:
+  name: reports-rendering-python-rust-configmap
+  namespace: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reports-rendering-python-rust
+  namespace: dev
+spec:
+  ports:
+  - name: reports_rendering_python_rust-server
+    nodePort: 31040
+    port: 8002
+  selector:
+    app: reports-rendering-python-rust
+  type: NodePort
+---
+apiVersion: v1
+imagePullSecrets:
+- name: pull-image-from-github-registry-secret
+kind: ServiceAccount
+metadata:
+  name: github-service-pull-image-account-reports-rendering-python-rust
+  namespace: dev
