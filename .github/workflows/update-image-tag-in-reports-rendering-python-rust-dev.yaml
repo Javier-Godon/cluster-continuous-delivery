@@ -3,7 +3,7 @@ name: Update image tag in reports-rendering-python-rust dev
 on:
   repository_dispatch:
     types:
-      - image-tag-in-reports-rendering-python-rust-updated
+      - image-tag-in-reports-rendering-python-rust-dev-updated
 
 jobs:
   update-image:
