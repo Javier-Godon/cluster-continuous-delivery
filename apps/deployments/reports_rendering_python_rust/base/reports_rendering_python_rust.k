@@ -15,7 +15,7 @@ reports_rendering_app_configuration: configuration.ApplicationConfiguration {
 }
 reports_rendering_python_rust_configmap_impl: reports_rendering_configmap.ReportsRenderingPythonRustConfigmap {
     _config = reports_rendering_app_configuration
-    name = "reports-rendering-python-rust_configmap"
+    name = "reports-rendering-python-rust-configmap"
 }
 reports_rendering_python_rust = container.Main {
     name = "reports-rendering-python-rust"

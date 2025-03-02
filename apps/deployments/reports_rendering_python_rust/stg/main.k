@@ -32,7 +32,7 @@ reportsRenderingPythonRustApplication: frontend.Server {
                 {
                     port = 8002
                     nodePort = 31040
-                    name = "reports_rendering_python_rust_server"
+                    name = "reports-rendering-python-rust-server"
                 }
             ]
         }
@@ -41,7 +41,7 @@ reportsRenderingPythonRustApplication: frontend.Server {
         v.Volume {
             name = "application-configuration"
             volumeSource = v.ConfigMap {
-                name = "reports_rendering_python_rust_configmap"
+                name = "reports-rendering-python-rust-configmap"
                 items = [
                     {key: "application.yaml", path: "application.yaml"}
                 ]
