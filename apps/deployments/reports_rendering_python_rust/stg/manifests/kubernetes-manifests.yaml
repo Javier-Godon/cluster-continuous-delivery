@@ -66,7 +66,7 @@ spec:
       serviceAccountName: github-service-pull-image-account-reports-rendering-python-rust
       volumes:
       - configMap:
-          name: reports_rendering_python_rust_configmap
+          name: reports-rendering-python-rust-configmap
           items:
           - key: application.yaml
             path: application.yaml
@@ -83,7 +83,7 @@ data:
       database: reports
 kind: ConfigMap
 metadata:
-  name: reports-rendering-python-rust_configmap
+  name: reports-rendering-python-rust-configmap
   namespace: stg
 ---
 apiVersion: v1
@@ -93,7 +93,7 @@ metadata:
   namespace: stg
 spec:
   ports:
-  - name: reports_rendering_python_rust_server
+  - name: reports-rendering-python-rust-server
     nodePort: 31040
     port: 8002
   selector:
