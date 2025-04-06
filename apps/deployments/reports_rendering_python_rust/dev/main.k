@@ -21,7 +21,7 @@ github_service_account: serviceaccount.ServiceAccount {
 #     }
 # ]
 reportsRenderingPythonRustApplication: frontend.Server {
-    image = "ghcr.io/javier-godon/reports-rendering-python-rust:bdbd275-2025-03-30T17-23"
+    image = "ghcr.io/javier-godon/reports-rendering-python-rust:156cbb2-2025-04-06T16-56"
     imagePullPolicy = "IfNotPresent"
     namespace = "dev"
     replicas = 1
