@@ -7,6 +7,132 @@ resources:
     metadata:
       name: dev
   dependsOn: []
+- id: v1:Namespace:postgres
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: postgres
+  dependsOn: []
+- id: v1:ConfigMap:postgres:blue-postgres-config
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: blue-postgres-config
+      labels:
+        app: blue-postgres
+      namespace: postgres
+    data:
+      POSTGRES_DB: blue_postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  dependsOn:
+  - v1:Namespace:postgres
+- id: v1:PersistentVolume:blue-postgres-pv-volume
+  type: Kubernetes
+  attributes:
+    kind: PersistentVolume
+    apiVersion: v1
+    metadata:
+      name: blue-postgres-pv-volume
+      labels:
+        type: local
+        app: blue-postgres
+    spec:
+      storageClassName: manual
+      capacity:
+        storage: '20Gi'
+      accessModes:
+      - ReadWriteMany
+      persistentVolumeReclaimPolicy: Retain
+      hostPath:
+        path: /mnt/data/postgres-volume
+  dependsOn:
+  - v1:Namespace:postgres
+- id: v1:PersistentVolumeClaim:postgres:blue-postgres-pv-claim
+  type: Kubernetes
+  attributes:
+    kind: PersistentVolumeClaim
+    apiVersion: v1
+    metadata:
+      name: blue-postgres-pv-claim
+      labels:
+        app: blue-postgres
+      namespace: postgres
+    spec:
+      storageClassName: manual
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: '20Gi'
+  dependsOn:
+  - v1:Namespace:postgres
+  - v1:PersistentVolume:blue-postgres-pv-volume
+- id: apps/v1:Deployment:postgres:blue-postgres
+  type: Kubernetes
+  attributes:
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: blue-postgres
+      labels:
+        app: blue-postgres
+      namespace: postgres
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: blue-postgres
+      template:
+        metadata:
+          labels:
+            app: blue-postgres
+        spec:
+          containers:
+          - name: postgres
+            image: postgres:17.0-alpine3.20
+            imagePullPolicy: IfNotPresent
+            ports:
+            - containerPort: 5432
+            envFrom:
+            - configMapRef:
+                name: blue-postgres-config
+            volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresdb
+          volumes:
+          - name: postgresdb
+            persistentVolumeClaim:
+              claimName: blue-postgres-pv-claim
+  dependsOn:
+  - v1:Namespace:postgres
+  - v1:ConfigMap:postgres:blue-postgres-config
+  - v1:PersistentVolume:blue-postgres-pv-volume
+  - v1:PersistentVolumeClaim:postgres:blue-postgres-pv-claim
+- id: v1:Service:postgres:blue-postgres
+  type: Kubernetes
+  attributes:
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: blue-postgres
+      labels:
+        app: blue-postgres
+      namespace: postgres
+    spec:
+      selector:
+        app: blue-postgres
+      type: NodePort
+      ports:
+      - port: 5432
+        nodePort: 31543
+  dependsOn:
+  - v1:Namespace:postgres
+  - apps/v1:Deployment:postgres:blue-postgres
 - id: v1:ConfigMap:dev:erp-back-go-configmap
   type: Kubernetes
   attributes:
@@ -119,6 +245,7 @@ resources:
   - v1:Namespace:dev
   - v1:ServiceAccount:dev:github-service-pull-image-account-erp-back-go
   - v1:ConfigMap:dev:erp-back-go-configmap
+  - apps/v1:Deployment:postgres:blue-postgres
 - id: v1:Service:dev:erp-back-go
   type: Kubernetes
   attributes:
