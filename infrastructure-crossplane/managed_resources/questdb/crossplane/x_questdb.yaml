@@ -157,6 +157,41 @@ spec:
                 #     persistentVolumeClaim:
                 #       claimName: blue-questdb-pv-claim
 
+    # - name: serviceBlueQuestdb
+    #   base:
+    #     apiVersion: kubernetes.crossplane.io/v1alpha2
+    #     kind: Object
+    #     spec:
+    #       patches:
+    #         - fromFieldPath: "spec.label.questdbNamespace"
+    #           toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+    #           policy:
+    #             fromFieldPath: "Required"
+    #       providerConfigRef:
+    #         name: kubernetes-provider
+    #       forProvider:
+    #         manifest:
+    #           apiVersion: v1
+    #           kind: Service
+    #           metadata:
+    #             name: nodeport-questdb
+    #             namespace: questdb
+    #             labels:
+    #               app: questdb-single-local
+    #           spec:
+    #             selector:
+    #               app: questdb-single-local
+    #             type: NodePort
+    #             ports:
+    #               - name: sql-port
+    #                 port: 8812
+    #                 targetPort: 8812
+    #                 nodePort: 31881
+    #               - name: ui-port
+    #                 port: 9000
+    #                 targetPort: 9000
+    #                 nodePort: 31882
+
     # - name: questdbBlueQuestdbPvVolume
     #   base:
     #     apiVersion: kubernetes.crossplane.io/v1alpha2

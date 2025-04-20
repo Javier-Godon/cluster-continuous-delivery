@@ -24,6 +24,10 @@ QUESTDB:
  in manager/kustomization.yaml change the version for the desired questdb-operator version (in my case newTag: v0.5.1)
  over questdb-operator/config execute: k apply -k default
 
+ expose questdb:
+    sql: k port-forward svc/questdb-single-local -n questdb 31881:8812
+    web console: k port-forward svc/questdb-single-local -n questdb 31333:9000
+
  we can get the crds in a file: k kustomize default > default_crds.yaml
 
  to retrieve all resources managed by crossplane:
